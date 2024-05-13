@@ -11,11 +11,9 @@ import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 interface iAppProps {
   userImage: string | null;
-  user: { id?: string };
-  subName: string;
 }
 
-export function UserDropdown({ userImage, user, subName }: iAppProps) {
+export function UserDropdown({ userImage }: iAppProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
