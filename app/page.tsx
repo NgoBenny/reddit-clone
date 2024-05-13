@@ -60,43 +60,45 @@ export default function Home({
   searchParams: { page: string };
 }) {
   return (
-    <div className="max-w-[1000px] mx-auto flex gap-x-10 mt-4 mb-10">
-      <div className="w-[65%] flex flex-col gap-y-5">
-        <CreatePostCard />
-        <Suspense fallback={<SuspenseCard />} key={searchParams.page}>
-          <ShowItems searchParams={searchParams} />
-        </Suspense>
-      </div>
-      <div className="w-[35%]">
-        <Card>
-          <Image src={Banner} alt="Banner" />
-          <div className="p-2">
-            <div className="flex items-center">
-              <Image
-                src={HelloImage}
-                alt="HelloImage"
-                className="w-10 h-16 -mt-6"
-              />
-              <h1 className="font-medium pl-3">Home</h1>
-            </div>
-            <p className="text-sm text-muted-foreground pt-2">
-              Your Reddit homepage. Check in with your favorite communities
-              here!
-            </p>
-            <Separator className="my-5" />
+    <>
+      <div className="max-w-[1000px] mx-auto flex gap-x-10 mt-4 mb-10">
+        <div className="w-[65%] flex flex-col gap-y-5">
+          <CreatePostCard />
+          <Suspense fallback={<SuspenseCard />} key={searchParams.page}>
+            <ShowItems searchParams={searchParams} />
+          </Suspense>
+        </div>
+        <div className="w-[35%]">
+          <Card>
+            <Image src={Banner} alt="Banner" />
+            <div className="p-2">
+              <div className="flex items-center">
+                <Image
+                  src={HelloImage}
+                  alt="HelloImage"
+                  className="w-10 h-16 -mt-6"
+                />
+                <h1 className="font-medium pl-3">Home</h1>
+              </div>
+              <p className="text-sm text-muted-foreground pt-2">
+                Your Reddit homepage. Check in with your favorite communities
+                here!
+              </p>
+              <Separator className="my-5" />
 
-            <div className="flex flex-col gap-y-3">
-              <Button asChild variant="secondary">
-                <Link href={"/r/un1on/create"}>Create Post</Link>
-              </Button>
-              <Button asChild>
-                <Link href={"/r/create"}>Create Community</Link>
-              </Button>
+              <div className="flex flex-col gap-y-3">
+                <Button asChild variant="secondary">
+                  <Link href={"/r/un1on/create"}>Create Post</Link>
+                </Button>
+                <Button asChild>
+                  <Link href={"/r/create"}>Create Community</Link>
+                </Button>
+              </div>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

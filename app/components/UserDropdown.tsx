@@ -33,8 +33,8 @@ export function UserDropdown({ userImage }: iAppProps) {
 
       <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuItem>
-          <Link className="w-full" href="/r/create">
-            Create Community
+          <Link className="w-full" href="/">
+            Homepage
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem>
