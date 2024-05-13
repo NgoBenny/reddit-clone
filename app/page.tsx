@@ -71,16 +71,16 @@ export default function Home({
         <div className="w-[35%]">
           <Card>
             <Image src={Banner} alt="Banner" />
-            <div className="p-2">
+            <div className="p-2 sm:p-4">
               <div className="flex items-center">
                 <Image
                   src={HelloImage}
                   alt="HelloImage"
                   className="w-10 h-16 -mt-6"
                 />
-                <h1 className="font-medium pl-3">Home</h1>
+                <h1 className="font-medium pl-3 text-lg sm:text-xl">Home</h1>
               </div>
-              <p className="text-sm text-muted-foreground pt-2">
+              <p className="text-sm sm:text-base text-muted-foreground pt-2 text-center sm:text-left">
                 Your Reddit homepage. Check in with your favorite communities
                 here!
               </p>
