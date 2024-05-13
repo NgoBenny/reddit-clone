@@ -87,9 +87,6 @@ export default function Home({
               <Separator className="my-5" />
 
               <div className="flex flex-col gap-y-3">
-                <Button asChild variant="secondary">
-                  <Link href={"/r/un1on/create"}>Create Post</Link>
-                </Button>
                 <Button asChild>
                   <Link href={"/r/create"}>Create Community</Link>
                 </Button>
