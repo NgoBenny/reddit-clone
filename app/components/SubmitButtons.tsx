@@ -71,7 +71,7 @@ export function UpVote() {
           onClick={handleUpVote}
         >
           <ArrowBigUp
-            className={cn("h-5 w-5 text-zinc-700", {
+            className={cn("h-5 w-5 text-zinc-700 dark:text-white", {
               "text-red-500 fill-red-500": upvoted,
             })}
           />
@@ -106,7 +106,7 @@ export function DownVote() {
           onClick={handleDownVote}
         >
           <ArrowBigDown
-            className={cn("h-5 w-5 text-zinc-700", {
+            className={cn("h-5 w-5 text-zinc-700 dark:text-white", {
               "text-blue-500 fill-blue-500": downvoted,
             })}
           />
