@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
+import { cn } from "@/lib/utils";
 
 export function SubmitButton({ text }: { text: string }) {
   const { pending } = useFormStatus();
@@ -47,16 +48,33 @@ export function SaveButton() {
 
 export function UpVote() {
   const { pending } = useFormStatus();
+  const [upvoted, setUpvoted] = useState(false);
+
+  const handleUpVote = () => {
+    if (!pending) {
+      setUpvoted((prev) => !prev);
+    }
+  };
 
   return (
     <>
       {pending ? (
-        <Button variant="outline" size="icon" disabled>
+        <Button variant="ghost" size="icon" disabled>
           <Loader2 className="h-4 w-4 animate-spin" />
         </Button>
       ) : (
-        <Button variant="outline" size="sm" type="submit">
-          <ArrowBigUp className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          type="submit"
+          aria-label="upvote"
+          onClick={handleUpVote}
+        >
+          <ArrowBigUp
+            className={cn("h-5 w-5 text-zinc-700", {
+              "text-red-500 fill-red-500": upvoted,
+            })}
+          />
         </Button>
       )}
     </>
@@ -65,16 +83,33 @@ export function UpVote() {
 
 export function DownVote() {
   const { pending } = useFormStatus();
+  const [downvoted, setDownvoted] = useState(false);
+
+  const handleDownVote = () => {
+    if (!pending) {
+      setDownvoted((prev) => !prev);
+    }
+  };
 
   return (
     <>
       {pending ? (
-        <Button variant="outline" size="icon" disabled>
+        <Button variant="ghost" size="icon" disabled>
           <Loader2 className="h-4 w-4 animate-spin" />
         </Button>
       ) : (
-        <Button variant="outline" size="sm" type="submit">
-          <ArrowBigDown className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="sm"
+          type="submit"
+          aria-label="downvote"
+          onClick={handleDownVote}
+        >
+          <ArrowBigDown
+            className={cn("h-5 w-5 text-zinc-700", {
+              "text-blue-500 fill-blue-500": downvoted,
+            })}
+          />
         </Button>
       )}
     </>
