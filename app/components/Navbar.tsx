@@ -26,6 +26,7 @@ export async function Navbar() {
       </Link>
 
       <div className="flex items-center gap-x-3.5">
+        <Link href="/communities" className="text-sm font-medium hover:text-primary">Communities</Link>
         <ThemeToggle />
         {user ? (
           <UserDropdown userImage={user.picture} />

@@ -8,7 +8,6 @@ import {
   ArrowUp,
   Loader2,
 } from "lucide-react";
-import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/utils";
 
@@ -46,15 +45,8 @@ export function SaveButton() {
   );
 }
 
-export function UpVote() {
+export function UpVote({ active = false }: { active?: boolean }) {
   const { pending } = useFormStatus();
-  const [upvoted, setUpvoted] = useState(false);
-
-  const handleUpVote = () => {
-    if (!pending) {
-      setUpvoted((prev) => !prev);
-    }
-  };
 
   return (
     <>
@@ -68,11 +60,11 @@ export function UpVote() {
           size="sm"
           type="submit"
           aria-label="upvote"
-          onClick={handleUpVote}
+          aria-pressed={active}
         >
           <ArrowBigUp
             className={cn("h-5 w-5 text-zinc-700 dark:text-white", {
-              "text-red-500 fill-red-500": upvoted,
+              "!text-red-500 fill-red-500": active,
             })}
           />
         </Button>
@@ -81,15 +73,8 @@ export function UpVote() {
   );
 }
 
-export function DownVote() {
+export function DownVote({ active = false }: { active?: boolean }) {
   const { pending } = useFormStatus();
-  const [downvoted, setDownvoted] = useState(false);
-
-  const handleDownVote = () => {
-    if (!pending) {
-      setDownvoted((prev) => !prev);
-    }
-  };
 
   return (
     <>
@@ -103,11 +88,11 @@ export function DownVote() {
           size="sm"
           type="submit"
           aria-label="downvote"
-          onClick={handleDownVote}
+          aria-pressed={active}
         >
           <ArrowBigDown
             className={cn("h-5 w-5 text-zinc-700 dark:text-white", {
-              "text-blue-500 fill-blue-500": downvoted,
+              "!text-blue-500 fill-blue-500": active,
             })}
           />
         </Button>

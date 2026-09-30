@@ -8,6 +8,8 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
+See [the audit and revival guide](AUDIT.md) for the deployment diagnosis, changes, and remaining feature backlog. Use Node 22.x, run `npm ci`, and copy `.env.example` to `.env.local` with your own Supabase, Kinde, and UploadThing settings. Run `npm run db:check` to verify database access before starting the app. Never commit `.env.local`.
+
 First, run the development server:
 
 ```bash

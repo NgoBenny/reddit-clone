@@ -14,7 +14,8 @@ import { SubmitButton } from "@/app/components/SubmitButtons";
 import { UploadDropzone } from "@/app/components/Uploadthing";
 import { useState } from "react";
 import { createPost } from "@/app/actions";
-import { create } from "domain";
+import { useParams } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
 import { JSONContent } from "@tiptap/react";
 
 const rules = [
@@ -40,19 +41,20 @@ const rules = [
   },
 ];
 
-export default function CreatePostRoute({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function CreatePostRoute() {
+  const params = useParams<{ id: string }>();
+  const { toast } = useToast();
   const [imageUrl, setImageUrl] = useState<null | string>(null);
   const [json, setJson] = useState<null | JSONContent>(null);
   const [title, setTitle] = useState<null | string>(null);
 
-  const createPostReddit = createPost.bind(null, { jsonContent: json });
+  async function createPostReddit(formData: FormData) {
+    try { await createPost({ jsonContent: json }, formData); }
+    catch { toast({ title: "Couldn’t create post", description: "Check your title, content, and community, then try again.", variant: "destructive" }); }
+  }
   return (
-    <div className="max-w-[1000px] mx-auto flex gap-x-10 mt-4">
-      <div className="w-[65%] flex flex-col gap-y-5">
+    <div className="max-w-[1000px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4">
+      <div className="w-full md:w-[65%] min-w-0 flex flex-col gap-y-5">
         <h1 className="font-semibold">
           Subreddit:{" "}
           <Link href={`/r/${params.id}`} className="text-primary">
@@ -67,7 +69,7 @@ export default function CreatePostRoute({
             </TabsTrigger>
             <TabsTrigger value="image">
               <Video className="h-4 w-4 mr-2" />
-              Image & Video
+              Image
             </TabsTrigger>
           </TabsList>
           <TabsContent value="post">
@@ -80,8 +82,10 @@ export default function CreatePostRoute({
                 />
                 <input type="hidden" name="subName" value={params.id} />
                 <CardHeader>
-                  <Label>Title</Label>
+                  <Label htmlFor="post-title">Title</Label>
                   <Input
+                    id="post-title"
+                    maxLength={300}
                     required
                     name="title"
                     placeholder="Title"
@@ -109,7 +113,7 @@ export default function CreatePostRoute({
                       setImageUrl(res[0].url);
                     }}
                     onUploadError={(error: Error) => {
-                      alert("Error");
+                      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
                     }}
                   />
                 ) : (
@@ -121,12 +125,13 @@ export default function CreatePostRoute({
                     className="h-80 rounded-lg w-full object-contain"
                   />
                 )}
+                <p className="text-sm text-muted-foreground">Add your title and publish from the Post tab.</p>
               </CardHeader>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      <div className="w-[35%]">
+      <div className="w-full md:w-[35%]">
         <Card className="flex flex-col p-4">
           <div className="flex items-center gap-x-2">
             <Image className="h-10 w-10" src={pfp} alt="pfp" />

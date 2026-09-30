@@ -14,6 +14,8 @@ import { Cake, FileQuestion } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { unstable_noStore as noStore } from "next/cache";
+import { notFound } from "next/navigation";
+import { pageNumber } from "@/app/lib/validation";
 
 async function getData(name: string, searchParam: string) {
   noStore();
@@ -35,7 +37,8 @@ async function getData(name: string, searchParam: string) {
         userId: true,
         posts: {
           take: 10,
-          skip: searchParam ? (Number(searchParam) - 1) * 10 : 0,
+          skip: (pageNumber(searchParam) - 1) * 10,
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           select: {
             Comment: {
               select: {
@@ -70,16 +73,19 @@ export default async function SubRedditRoute({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: { page: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ page: string }>;
 }) {
-  const { data, count } = await getData(params.id, searchParams.page);
+  const { id } = await params;
+  const query = await searchParams;
+  const { data, count } = await getData(id, query.page);
+  if (!data) notFound();
   const { getUser } = getKindeServerSession();
   const user = await getUser();
   return (
-    <div className="max-w-[1000px] mx-auto flex gap-x-10 mt-4 mb-10">
-      <div className="w-[65%] flex flex-col gap-y-5">
-        <CreatePostCard />
+    <div className="max-w-[1000px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
+      <div className="w-full md:w-[65%] min-w-0 flex flex-col gap-y-5">
+        <CreatePostCard subName={data.name} />
 
         {data?.posts.length === 0 ? (
           <div className="flex min-h-[300px] flex-col justify-center items-center rounded-md border border-dashed p-8 text-center">
@@ -99,6 +105,7 @@ export default async function SubRedditRoute({
                 imageString={post.imageString}
                 subName={data.name}
                 commentAmount={post.Comment.length}
+                currentVote={post.Vote.find((vote) => vote.userId === user?.id)?.voteType}
                 title={post.title}
                 userName={post.User?.userName as string}
                 jsonContent={post.textContent}
@@ -115,7 +122,7 @@ export default async function SubRedditRoute({
         )}
       </div>
 
-      <div className="w-[35%]">
+      <div className="w-full md:w-[35%]">
         <Card>
           <div className="bg-muted p-4 font-semibold">About Community</div>
           <div className="p-4">
@@ -134,7 +141,7 @@ export default async function SubRedditRoute({
             {user?.id === data?.userId ? (
               <SubDescriptionForm
                 description={data?.description}
-                subName={params.id}
+                subName={id}
               />
             ) : (
               <p className="text-sm font-normal text-secondary-foreground mt-2">

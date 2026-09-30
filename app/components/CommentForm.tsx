@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "./SubmitButtons";
 import { createComment } from "../actions";
 import { useRef } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface iAppProps {
   postId: string;
@@ -12,18 +13,26 @@ interface iAppProps {
 
 export function CommentForm({ postId }: iAppProps) {
   const ref = useRef<HTMLFormElement>(null);
+  const { toast } = useToast();
   return (
     <form
       className="mt-5"
       action={async (formData) => {
-        await createComment(formData);
-        ref.current?.reset();
+        try {
+          await createComment(formData);
+          ref.current?.reset();
+        } catch {
+          toast({ title: "Couldn’t add comment", description: "Your draft is saved here. Please try again.", variant: "destructive" });
+        }
       }}
       ref={ref}
     >
       <input type="hidden" name="postId" value={postId}></input>
-      <Label>Comment here</Label>
+      <Label htmlFor={`comment-${postId}`}>Comment here</Label>
       <Textarea
+        id={`comment-${postId}`}
+        required
+        maxLength={5000}
         placeholder="Add a comment"
         className="w-full mt-1 mb-2"
         name="comment"

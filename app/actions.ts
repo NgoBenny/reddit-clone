@@ -3,9 +3,15 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "./lib/db";
-import { Prisma, TypeOfVote } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { JSONContent } from "@tiptap/react";
 import { revalidatePath } from "next/cache";
+import {
+  formText,
+  validImage,
+  validName,
+  validRichText,
+} from "./lib/validation";
 
 export async function updateUsername(prevState: any, formData: FormData) {
   const { getUser } = getKindeServerSession();
@@ -15,9 +21,16 @@ export async function updateUsername(prevState: any, formData: FormData) {
     return redirect("/api/auth/login");
   }
 
-  const username = formData.get("username") as string;
-
   try {
+    const username =
+      typeof formData.get("username") === "string"
+        ? (formData.get("username") as string).trim()
+        : "";
+    if (!validName(username))
+      return {
+        message: "Use 2–21 letters, numbers, underscores or hyphens",
+        status: "error",
+      };
     await prisma.user.update({
       where: {
         id: user.id,
@@ -27,8 +40,9 @@ export async function updateUsername(prevState: any, formData: FormData) {
       },
     });
 
+    revalidatePath("/", "layout");
     return {
-      message: "Updated username succesfully",
+      message: "Updated username successfully",
       status: "green",
     };
   } catch (e) {
@@ -54,7 +68,16 @@ export async function createCommunity(prevState: any, formData: FormData) {
   }
 
   try {
-    const name = formData.get("name") as string;
+    const name =
+      typeof formData.get("name") === "string"
+        ? (formData.get("name") as string).trim()
+        : "";
+    if (!validName(name) || name === "create")
+      return {
+        message:
+          "Use 2–21 letters, numbers, underscores or hyphens; create is reserved",
+        status: "error",
+      };
 
     const data = await prisma.subreddit.create({
       data: {
@@ -86,17 +109,30 @@ export async function updateSubDescription(prevState: any, formData: FormData) {
   }
 
   try {
-    const subName = formData.get("subName") as string;
-    const description = formData.get("description") as string;
+    const subName = formText(formData, "subName", 21);
+    const description = formData.get("description");
+    if (typeof description !== "string" || description.trim().length > 120) {
+      return {
+        status: "error",
+        message: "Description must be at most 120 characters",
+      };
+    }
 
-    await prisma.subreddit.update({
+    const result = await prisma.subreddit.updateMany({
       where: {
         name: subName,
+        userId: user.id,
       },
       data: {
-        description: description,
+        description: description.trim(),
       },
     });
+    if (!result.count)
+      return {
+        status: "error",
+        message: "Only the community creator can edit its description",
+      };
+    revalidatePath(`/r/${subName}`);
 
     return {
       status: "green",
@@ -112,7 +148,7 @@ export async function updateSubDescription(prevState: any, formData: FormData) {
 
 export async function createPost(
   { jsonContent }: { jsonContent: JSONContent | null },
-  formData: FormData
+  formData: FormData,
 ) {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
@@ -121,20 +157,31 @@ export async function createPost(
     return redirect("/api/auth/login");
   }
 
-  const title = formData.get("title") as string;
+  const title = formText(formData, "title", 300);
   const imageUrl = formData.get("imageUrl") as string | null;
-  const subName = formData.get("subName") as string;
+  const subName = formText(formData, "subName", 21);
+  if (imageUrl && (typeof imageUrl !== "string" || !validImage(imageUrl)))
+    throw new Error("Invalid image URL");
+  if (
+    jsonContent &&
+    (jsonContent.type !== "doc" ||
+      JSON.stringify(jsonContent).length > 50000 ||
+      !validRichText(jsonContent))
+  )
+    throw new Error("Invalid or oversized post body");
 
   const data = await prisma.post.create({
     data: {
       title: title,
-      imageString: imageUrl ?? undefined,
+      imageString: imageUrl || undefined,
       subName: subName,
       userId: user.id,
       textContent: jsonContent ?? undefined,
     },
   });
 
+  revalidatePath("/");
+  revalidatePath(`/r/${subName}`);
   return redirect(`/post/${data.id}`);
 }
 
@@ -146,47 +193,38 @@ export async function handleVote(formData: FormData) {
     return redirect("/api/auth/login");
   }
 
-  const postId = formData.get("postId") as string;
-  const voteDirection = formData.get("voteDirection") as TypeOfVote;
+  const postId = formText(formData, "postId", 100);
+  const voteDirection = formData.get("voteDirection");
+  if (voteDirection !== "UP" && voteDirection !== "DOWN")
+    throw new Error("Invalid vote direction");
 
-  const vote = await prisma.vote.findFirst({
-    where: {
-      postId: postId,
-      userId: user.id,
-    },
-  });
-
-  if (vote) {
-    if (vote.voteType === voteDirection) {
-      await prisma.vote.delete({
-        where: {
-          id: vote.id,
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      await prisma.$transaction(
+        async (tx) => {
+          const where = { postId, userId: user.id };
+          const vote = await tx.vote.findFirst({ where });
+          // Also repair historical duplicates without deleting other users' votes.
+          await tx.vote.deleteMany({ where });
+          if (vote?.voteType !== voteDirection) {
+            await tx.vote.create({
+              data: { ...where, voteType: voteDirection },
+            });
+          }
         },
-      });
-
-      return revalidatePath("/");
-    } else {
-      await prisma.vote.update({
-        where: {
-          id: vote.id,
-        },
-        data: {
-          voteType: voteDirection,
-        },
-      });
-      return revalidatePath("/");
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
+      break;
+    } catch (error) {
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        !["P2034", "P2002"].includes(error.code) ||
+        attempt === 3
+      )
+        throw error;
     }
   }
-
-  await prisma.vote.create({
-    data: {
-      voteType: voteDirection,
-      userId: user.id,
-      postId: postId,
-    },
-  });
-
-  return revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function createComment(formData: FormData) {
@@ -197,10 +235,10 @@ export async function createComment(formData: FormData) {
     return redirect("/api/auth/login");
   }
 
-  const comment = formData.get("comment") as string;
-  const postId = formData.get("postId") as string;
+  const comment = formText(formData, "comment", 5000);
+  const postId = formText(formData, "postId", 100);
 
-  const data = await prisma.comment.create({
+  await prisma.comment.create({
     data: {
       text: comment,
       userId: user.id,
@@ -209,4 +247,5 @@ export async function createComment(formData: FormData) {
   });
 
   revalidatePath(`/post/${postId}`);
+  revalidatePath("/", "layout");
 }
