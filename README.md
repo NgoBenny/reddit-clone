@@ -1,3 +1,9 @@
+# Reddit Clone
+
+A full-stack community discussion app built with Next.js 14, TypeScript, and PostgreSQL. Users can sign in through Kinde, create communities, publish rich-text or image posts, comment, and toggle upvotes or downvotes. Prisma-backed server actions persist these interactions, while paginated feeds and Tailwind CSS components provide the browsing interface.
+
+The project brings authentication, relational data modeling, image uploads through UploadThing, and server-rendered pages together in one application.
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
