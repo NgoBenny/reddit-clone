@@ -1,6 +1,6 @@
 # Reddit Clone
 
-A full-stack community discussion app built with Next.js 14, TypeScript, and PostgreSQL. Users can sign in through Kinde, create communities, publish rich-text or image posts, comment, and toggle upvotes or downvotes. Prisma-backed server actions persist these interactions, while paginated feeds and Tailwind CSS components provide the browsing interface.
+A full-stack community discussion app built with Next.js 15, TypeScript, and PostgreSQL. Users can sign in through Kinde, create communities, publish rich-text or image posts, comment, and toggle upvotes or downvotes. Prisma-backed server actions persist these interactions, while paginated feeds and Tailwind CSS components provide the browsing interface.
 
 The project brings authentication, relational data modeling, image uploads through UploadThing, and server-rendered pages together in one application.
 
@@ -8,7 +8,7 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-See [the audit and revival guide](AUDIT.md) for the deployment diagnosis, changes, and remaining feature backlog. Use Node 22.x, run `npm ci`, and copy `.env.example` to `.env.local` with your own Supabase, Kinde, and UploadThing settings. Run `npm run db:check` to verify database access before starting the app. Never commit `.env.local`.
+See [the audit and revival guide](AUDIT.md) for the deployment diagnosis, changes, and remaining feature backlog. Use Node 24.x, run `npm ci`, and copy `.env.example` to `.env.local` with your own Supabase, Kinde, and UploadThing settings. Run `npm run db:check` to verify database access before starting the app. Never commit `.env.local`.
 
 First, run the development server:
 

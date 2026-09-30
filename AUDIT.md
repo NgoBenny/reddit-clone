@@ -4,7 +4,7 @@ Audited September 30, 2026. Repository: [NgoBenny/reddit-clone](https://github.c
 
 ## Is it recoverable?
 
-Yes. The source contains a working small discussion application, and GitHub's Vercel deployment status is successful. The reported production error is a runtime failure in `prisma.post.count()`: Prisma cannot reach `aws-0-us-west-1.pooler.supabase.com:6543`. The owner confirmed that the Supabase project is paused, then clarified that restoration has not started and asked about hosted versus local backup recovery. This explains the reported database outage; it does not establish expired credentials. The original deployment still displayed digest `4017352080` during browser checks.
+Yes. The source contains a working small discussion application, and GitHub's Vercel deployment status is successful. The reported production error is a runtime failure in `prisma.post.count()`: Prisma cannot reach `aws-0-us-west-1.pooler.supabase.com:6543`. The original Supabase project was paused and could only be recovered from a downloadable backup. Its five application tables were restored into a new hosted project, Vercel connection settings were updated, and the public homepage now loads recovered posts. The outage was caused by database availability; expired credentials were not established.
 
 Prisma here is an ORM that connects directly to PostgreSQL using `DATABASE_URL`. There is no Prisma API key or Supabase JavaScript SDK in this application. Supabase hosts the database; Kinde handles authentication; UploadThing stores images. Restoring Supabase can recover the existing deployment without a code release, provided its connection settings remain valid.
 
@@ -13,7 +13,7 @@ Prisma here is an ORM that connects directly to PostgreSQL using `DATABASE_URL`.
 | Layer | Original repository | Repair branch |
 | --- | --- | --- |
 | Application | Next.js 14.2.3 App Router, React 18, TypeScript | Next.js 15.5.27, React 18.3.1; asynchronous route props updated |
-| Runtime | No Node version specified | Node 22.x specified for Vercel and local setup |
+| Runtime | No Node version specified | Node 24.x specified for Vercel and local setup |
 | UI | Tailwind CSS 3, shadcn/Radix, Lucide, next-themes | Existing UI retained; feed/post layouts work at narrow widths |
 | Database | PostgreSQL, Prisma/client 5.13.0 | Same schema and Prisma version; no production schema changes |
 | Login | Kinde Next.js SDK 2.2.5 in the original lockfile | Compatible SDK update to 2.13.1 |
@@ -36,7 +36,7 @@ Next.js 14 is outside the currently supported release lines. See the [Next.js su
 
 | Priority | Finding | Repair |
 | --- | --- | --- |
-| P0 | Paused Supabase makes the home feed fail on the server | Hosted restoration still required; added a connection/table diagnostic and environment template |
+| P0 | Paused Supabase makes the home feed fail on the server | Recovered application tables into a new hosted project; public homepage verified. Added a connection/table diagnostic and environment template |
 | P0 | Description editing only checks login; a forged action can edit another owner's community | Database update filters by both community name and authenticated creator ID |
 | P0 | Old dependency tree has 51 npm audit findings, including a critical Next.js finding | Framework/auth/editor updates, compatible dependency patches, and lockfile refreshed |
 | P1 | Vote read/write steps race and permit duplicate votes | Serializable transaction with bounded conflict retries; removes duplicates for that user/post on its next vote action |
@@ -54,7 +54,7 @@ Next.js 14 is outside the currently supported release lines. See the [Next.js su
 | P2 | Layout assumes desktop percentage columns | Responsive columns and constrained post content |
 | P2 | Empty feed, shared pagination keys, boilerplate metadata, default crash screen | Empty state, unique keys, pagination labels, app metadata, retry screens |
 
-The connection error remains a service issue until the project is restored. Error screens improve recovery feedback but cannot reconnect a paused database. No fake feed or authentication bypass was added.
+The database outage is resolved. The repair branch still needs preview validation and deployment; the restored production site currently runs the original application code.
 
 ## Features still missing, in recommended order
 
@@ -69,12 +69,12 @@ Not every Reddit feature is necessary. Chats, realtime feeds, video transcoding,
 
 ## Restore the existing deployment
 
-1. In Supabase, restore the original project and wait until it is active. Refresh the existing Vercel URL. If it works, the immediate outage is resolved.
+1. The current outage is resolved using a backup restored into a new hosted Supabase project. For future recovery, resume the original project if Supabase offers that option; otherwise use the backup workflow below.
 2. If it still fails, inspect a new Vercel runtime log. Compare **Connect → Transaction pooler** with `DATABASE_URL` in Vercel's Production environment. Copy the current host, database user, and URL-encoded password. For this Prisma 5 application, use port 6543 and `pgbouncer=true`; the environment example includes conservative connection and TLS settings. Use the exact host from your dashboard, not an assumed region/hostname.
 3. Set `DIRECT_URL` to the current session pooler on port 5432, or a direct connection when the execution environment supports it. Keep schema commands away from the transaction pooler. See [Supabase's Prisma connection guide](https://supabase.com/docs/guides/database/prisma).
 4. Verify all Kinde environment variables from `.env.example`. Production site/logout URLs use your Vercel domain. The post-login URL must end in `/api/auth/creation` so the local user row exists before posting. Kinde's allowed callback is `https://YOUR_DOMAIN/api/auth/kinde_callback`; configure the matching logout redirect. Give preview deployments their own correctly allowed callback/origin, or test authentication on a stable staging domain.
 5. Keep the existing UploadThing v6 app ID/secret valid. Test an image upload after login. Changing to UploadThing v7 requires a separate credential/API migration.
-6. For the repair release, set the Vercel root directory to the repository root and Node to 22.x. Use `npm ci` and `npm run build`, then verify a preview before promoting it. New environment settings require a new deployment to take effect.
+6. For the repair release, set the Vercel root directory to the repository root and Node to 24.x. Use `npm ci` and `npm run build`, then verify a preview before promoting it. New environment settings require a new deployment to take effect.
 7. After restoration, verify browsing, login, community creation, owned description updates, text/image posting, vote toggle/switch, comments, and logout. Compare fresh runtime logs if anything fails.
 
 ### When the original project only offers a downloadable backup
@@ -88,7 +88,7 @@ No passwords or connection strings were obtained during the audit. Do not send t
 ## Local setup and validation
 
 ```sh
-# Node 22.x
+# Node 24.x
 npm ci
 # Copy .env.example to .env.local and fill in your own service settings.
 npm run db:check
@@ -103,12 +103,12 @@ npm run dev
 
 | Verification | Result |
 | --- | --- |
-| Production build | Passed on Node 22.23.3 with temporary fake Kinde build values; all routes compiled |
+| Production build | Passed on Node 24.19.0 with temporary fake Kinde build values; all routes compiled |
 | Type checking | Passed, including asynchronous Next.js 15 route props |
 | Regression check | Passed |
 | Lint | Passed with two existing warnings for unoptimized avatar `<img>` elements |
 | Dependency audit | Zero known vulnerabilities after updates, including patched Sharp/PostCSS overrides |
-| Live site | Still fails with the original digest; owner has not restored the database yet |
-| Live DB/OAuth/uploads | Not verified; no service credentials available locally |
+| Live site | Public homepage loads recovered posts after hosted database recovery; repair PR is not deployed |
+| Live DB/OAuth/uploads | Owner restored application data; live OAuth and uploads remain unverified |
 
 The successful build uses fake auth configuration only to compile routes, and does not validate real Kinde login. No fake credentials were saved to a production configuration. Full signed-in end-to-end checks require a restored database and valid Kinde/UploadThing configuration. The repair has no schema migration requirement and does not modify the production database.
