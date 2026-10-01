@@ -71,3 +71,19 @@ export function validRichText(value: unknown, depth = 0): boolean {
       node.content.every((child) => validRichText(child, depth + 1)))
   );
 }
+
+export function postBody(json: unknown) {
+  if (json == null) return { textContent: undefined, bodyText: "" };
+  if (
+    !validRichText(json) ||
+    (json as { type: string }).type !== "doc" ||
+    JSON.stringify(json).length > 50000
+  )
+    throw new Error("Invalid or oversized post body");
+  const text = (node: any): string =>
+    node.type === "text" ? node.text : (node.content ?? []).map(text).join(" ");
+  return {
+    textContent: json as import("@prisma/client").Prisma.InputJsonValue,
+    bodyText: text(json),
+  };
+}

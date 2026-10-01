@@ -20,7 +20,7 @@ export async function createLimited<T>(
   return prisma.$transaction(async (tx) => {
     // Transaction locks serialize this user's writes across Vercel instances.
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`reddit:${kind}:${userId}`}, 0))`;
-    // ponytail: counts retained records; use dedicated counters when deletion is added.
+    // Soft-deleted records stay in the count, so deletion cannot bypass the limit.
     const where = { userId, createdAt: { gte: new Date(Date.now() - windowMs) } };
     const count = kind === "post" ? await tx.post.count({ where }) :
       kind === "comment" ? await tx.comment.count({ where }) : await tx.subreddit.count({ where });

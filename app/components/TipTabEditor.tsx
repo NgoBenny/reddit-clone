@@ -81,6 +81,9 @@ export function TipTabEditor({
     editorProps: {
       attributes: {
         class: "prose dark:prose-invert",
+        "aria-label": "Post body",
+        role: "textbox",
+        "aria-multiline": "true",
       },
     },
     onUpdate: ({ editor }) => {

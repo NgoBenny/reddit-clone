@@ -1,11 +1,33 @@
-function tableCounts(db) {
-  return Promise.all([db.user.count(), db.subreddit.count(), db.post.count(), db.vote.count(), db.comment.count()]);
+async function tableCounts(db) {
+  const counts = await Promise.all([
+    db.user.count(),
+    db.subreddit.count(),
+    db.post.count(),
+    db.vote.count(),
+    db.comment.count(),
+  ]);
+  const features =
+    await db.$queryRaw`SELECT to_regclass('public."Membership"') IS NOT NULL AS present`;
+  if (features[0].present)
+    counts.push(
+      ...(await Promise.all([
+        db.membership.count(),
+        db.savedPost.count(),
+        db.report.count(),
+        db.notification.count(),
+      ])),
+    );
+  return counts;
 }
 
 async function requireRls(db) {
-  const tables = await db.$queryRaw`SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('User', 'Subreddit', 'Post', 'Vote', 'Comment')`;
-  if (tables.length !== 5 || tables.some((table) => !table.rowsecurity)) {
-    throw new Error("All five application tables must have RLS enabled.");
+  const tables =
+    await db.$queryRaw`SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('User', 'Subreddit', 'Post', 'Vote', 'Comment', 'Membership', 'SavedPost', 'Report', 'Notification')`;
+  if (
+    ![5, 9].includes(tables.length) ||
+    tables.some((table) => !table.rowsecurity)
+  ) {
+    throw new Error("All application tables must have RLS enabled.");
   }
 }
 

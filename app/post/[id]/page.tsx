@@ -1,190 +1,171 @@
 import { getVoteSummary } from "@/app/lib/votes";
 import { CommentForm } from "@/app/components/CommentForm";
+import { CommentThread } from "@/app/components/CommentThread";
+import { ContentActions } from "@/app/components/ContentActions";
 import { CopyLink } from "@/app/components/CopyLink";
 import { RenderToJson } from "@/app/components/RendertoJson";
 import { VoteControls } from "@/app/components/VoteControls";
+import { ActionForm } from "@/app/components/ActionForm";
+import { SubmitButton } from "@/app/components/SubmitButtons";
+import { setSavedPost } from "@/app/actions";
 import prisma from "@/app/lib/db";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Cake, MessageCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { unstable_noStore as noStore } from "next/cache";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-
-async function getData(id: string) {
-  noStore();
-  const data = await prisma.post.findUnique({
-    where: {
-      id: id,
-    },
+export const dynamic = "force-dynamic";
+export default async function PostPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const user = await getKindeServerSession().getUser();
+  // ponytail: one post's complete thread; paginate root threads if discussions become large.
+  const post = await prisma.post.findUnique({
+    where: { id },
     select: {
-      createdAt: true,
+      id: true,
       title: true,
       imageString: true,
       textContent: true,
       subName: true,
-      id: true,
-      Vote: {
-        select: {
-          voteType: true,
-          userId: true,
-        },
-      },
+      userId: true,
+      deletedAt: true,
+      removedAt: true,
+      editedAt: true,
+      flair: true,
+      User: { select: { userName: true } },
+      Subreddit: { select: { name: true, description: true, rules: true } },
+      Vote: { select: { voteType: true, userId: true } },
+      savedBy: { where: { userId: user?.id || "" }, select: { userId: true } },
       Comment: {
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select: {
           id: true,
           text: true,
-          User: {
-            select: {
-              imageUrl: true,
-              userName: true,
-            },
-          },
-        },
-      },
-      Subreddit: {
-        select: {
-          name: true,
-          createdAt: true,
-          description: true,
-        },
-      },
-      User: {
-        select: {
-          userName: true,
+          userId: true,
+          parentId: true,
+          editedAt: true,
+          deletedAt: true,
+          removedAt: true,
+          User: { select: { userName: true } },
         },
       },
     },
   });
-  if (!data) {
-    return notFound();
-  }
-
-  return data;
-}
-
-export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const data = await getData(id);
-  const user = await getKindeServerSession().getUser();
-  const votes = getVoteSummary(data.Vote, user?.id);
+  if (!post) notFound();
+  const available = !post.deletedAt && !post.removedAt;
   return (
-    <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
-      <div className="w-full md:w-[70%] min-w-0 flex flex-col gap-y-5">
-        <Card className="p-2 flex">
-          <VoteControls postId={data.id} {...votes}
-            className="flex flex-col items-center gap-y-2 p-2" />
-
-          <div className="p-2 w-full">
+    <main className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
+      <div className="w-full md:w-[70%] min-w-0">
+        <Card className="p-3 flex">
+          {available && (
+            <VoteControls
+              postId={id}
+              {...getVoteSummary(post.Vote, user?.id)}
+              className="flex flex-col items-center gap-y-2 p-2"
+            />
+          )}
+          <div className="p-2 min-w-0 flex-1 break-words">
             <p className="text-xs text-muted-foreground">
-              Posted by u/{data.User?.userName}
+              {available ? (
+                <Link href={`/u/${post.User?.userName}`}>
+                  Posted by u/{post.User?.userName}
+                </Link>
+              ) : (
+                "Content unavailable"
+              )}
             </p>
-
-            <h1 className="font-medium mt-1 text-lg">{data.title}</h1>
-
-            {data.imageString && (
-              <Image
-                src={data.imageString}
-                alt="User Image"
-                width={500}
-                height={400}
-                className="w-full h-auto object-contain mt-2"
-              />
-            )}
-
-            {data.textContent && <RenderToJson data={data.textContent} />}
-
-            <div className="flex gap-x-5 items-center mt-3">
-              <div className="flex items-center gap-x-1">
-                <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                <p className="text-muted-foreground font-medium text-xs">
-                  {data.Comment.length} Comments
-                </p>
-              </div>
-
-              <CopyLink id={id} />
-            </div>
-
-            <CommentForm postId={id} />
-
-            <Separator className="my-5" />
-
-            <div className="flex flex-col gap-y-7">
-              {data.Comment.map((item) => (
-                <div key={item.id} className="flex flex-col">
-                  <div className="flex items-center gap-x-3">
-                    <img
-                      src={
-                        item.User?.imageUrl
-                          ? item.User?.imageUrl
-                          : "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg"
-                      }
-                      className="w-7 h-7 rounded-full"
-                      alt="User avatar"
+            <h1 className="font-medium mt-1 text-lg">
+              {post.deletedAt
+                ? "[deleted]"
+                : post.removedAt
+                  ? "Removed by moderator"
+                  : post.title}
+            </h1>
+            {available && (
+              <>
+                {post.flair && (
+                  <span className="text-xs rounded bg-muted px-2 py-1">
+                    {post.flair}
+                  </span>
+                )}
+                {post.editedAt && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    edited
+                  </span>
+                )}
+                {post.imageString && (
+                  <Image
+                    src={post.imageString}
+                    alt="Post image"
+                    width={500}
+                    height={400}
+                    className="w-full h-auto object-contain mt-2"
+                  />
+                )}
+                {post.textContent && <RenderToJson data={post.textContent} />}
+                <div className="flex flex-wrap gap-4 items-center mt-3">
+                  <span className="text-sm text-muted-foreground">
+                    {
+                      post.Comment.filter((c) => !c.deletedAt && !c.removedAt)
+                        .length
+                    }{" "}
+                    Comments
+                  </span>
+                  <CopyLink id={id} />
+                  <ActionForm action={setSavedPost}>
+                    <input type="hidden" name="postId" value={id} />
+                    <input
+                      type="hidden"
+                      name="save"
+                      value={String(!post.savedBy.length)}
                     />
-
-                    <h3 className="text-sm font-medium">
-                      {item.User?.userName}
-                    </h3>
-                  </div>
-
-                  <p className="ml-10 text-secondary-foreground text-sm tracking-wide">
-                    {item.text}
-                  </p>
+                    <SubmitButton
+                      text={post.savedBy.length ? "Unsave" : "Save"}
+                      size="sm"
+                    />
+                  </ActionForm>
                 </div>
-              ))}
-            </div>
+                <ContentActions
+                  id={id}
+                  kind="post"
+                  owner={!!user && user.id === post.userId}
+                />
+                <CommentForm postId={id} />
+              </>
+            )}
+            <h2 className="font-semibold mt-5 border-t pt-4">Discussion</h2>
+            <CommentThread
+              comments={post.Comment}
+              postId={id}
+              userId={user?.id}
+              canReply={available}
+            />
           </div>
         </Card>
       </div>
-
-      <div className="w-full md:w-[30%]">
-        <Card>
-          <div className="bg-muted p-4 font-semibold">About Community</div>
-          <div className="p-4">
-            <div className="flex items-center gap-x-3">
-              <Image
-                src={`https://avatar.vercel.sh/${data?.subName}`}
-                alt="Image of subreddit"
-                width={60}
-                height={60}
-                className="rounded-full h-16 w-16"
-              />
-              <Link href={`/r/${data?.subName}`} className="font-medium">
-                r/{data?.subName}
-              </Link>
-            </div>
-
-            <p className="text-sm font-normal text-secondary-foreground mt-2">
-              {data?.Subreddit?.description}
-            </p>
-
-            <div className="flex items-center gap-x-2 mt-3">
-              <Cake className="h-5 w-5 text-muted-foreground" />
-              <p className="text-muted-foreground font-medium text-sm">
-                Created:{" "}
-                {new Date(data.Subreddit?.createdAt ?? data.createdAt).toLocaleDateString("en-us", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </p>
-            </div>
-
-            <Separator className="my-5" />
-            <Button asChild className="rounded-full w-full">
-              <Link href={`/r/${data?.subName}/create`}>Create Post</Link>
-            </Button>
-          </div>
+      <aside className="w-full md:w-[30%]">
+        <Card className="p-4 space-y-4">
+          <h2 className="font-semibold">About Community</h2>
+          <Link href={`/r/${post.subName}`} className="text-primary">
+            r/{post.subName}
+          </Link>
+          <p className="text-sm">{post.Subreddit?.description}</p>
+          <h3 className="font-medium">Rules</h3>
+          <p className="text-sm whitespace-pre-wrap">
+            {post.Subreddit?.rules || "Be respectful."}
+          </p>
+          <Link
+            href={`/r/${post.subName}/create`}
+            className="block text-primary underline"
+          >
+            Create Post
+          </Link>
         </Card>
-      </div>
-    </div>
+      </aside>
+    </main>
   );
 }

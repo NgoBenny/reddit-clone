@@ -10,10 +10,21 @@ import {
 } from "@kinde-oss/kinde-auth-nextjs/components";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { UserDropdown } from "./UserDropdown";
+import prisma from "../lib/db";
+import { Bell } from "lucide-react";
 
 export async function Navbar() {
   const { getUser } = getKindeServerSession();
   const user = await getUser();
+  const [profile, unread] = user
+    ? await Promise.all([
+        prisma.user.findUnique({
+          where: { id: user.id },
+          select: { userName: true },
+        }),
+        prisma.notification.count({ where: { userId: user.id, readAt: null } }),
+      ])
+    : [null, 0];
   return (
     <nav className="h-[10vh] w-full flex items-center border-b px-5 lg:px-14 justify-between">
       <Link href="/" className="flex items-center gap-x-3">
@@ -25,11 +36,33 @@ export async function Navbar() {
         />
       </Link>
 
-      <div className="flex items-center gap-x-3.5">
-        <Link href="/communities" className="text-sm font-medium hover:text-primary">Communities</Link>
+      <div className="flex items-center gap-x-2 sm:gap-x-3.5">
+        <Link
+          href="/communities"
+          className="text-sm font-medium hover:text-primary"
+        >
+          Communities
+        </Link>
         <ThemeToggle />
         {user ? (
-          <UserDropdown userImage={user.picture} />
+          <>
+            <Link
+              href="/notifications"
+              aria-label={`Notifications, ${unread} unread`}
+              className="relative"
+            >
+              <Bell className="h-5 w-5" />
+              {unread > 0 && (
+                <span className="absolute -right-2 -top-2 rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
+            </Link>
+            <UserDropdown
+              userImage={user.picture}
+              userName={profile?.userName}
+            />
+          </>
         ) : (
           <div className="flex items-center gap-x-4">
             <Button variant="secondary" asChild>

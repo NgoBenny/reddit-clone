@@ -26,7 +26,9 @@ export default function SubredditPage() {
           Create Community
         </h1>
         <Separator className="my-4" />
-        <Label htmlFor="community-name" className="text-lg">Name</Label>
+        <Label htmlFor="community-name" className="text-lg">
+          Name
+        </Label>
         <p className="text-muted-foreground">
           Once you pick a name, it can't be changed!
         </p>
@@ -37,7 +39,7 @@ export default function SubredditPage() {
           </p>
           <Input
             id="community-name"
-            pattern="[a-zA-Z0-9_-]{2,21}"
+            pattern="[a-zA-Z0-9_\-]{2,21}"
             name="name"
             required
             className="pl-6"

@@ -85,7 +85,7 @@ async function main() {
   assert.equal(commentResets, 1, "Rate-limited comments must preserve the draft");
   assert.equal(notifications.at(-1).description, commentResult.error);
   // Exercise the actual composer handler: redirects must not show failure toasts.
-  const source = ts.createSourceFile("composer.tsx", fs.readFileSync("app/r/[id]/create/page.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const source = ts.createSourceFile("composer.tsx", fs.readFileSync("app/components/PostComposer.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let handler;
   function findHandler(node) {
     if (ts.isFunctionDeclaration(node) && node.name?.text === "createPostReddit") handler = node.getText(source);
@@ -101,6 +101,7 @@ async function main() {
     unstable_rethrow,
     toast: () => notices++,
     json: null,
+    post: undefined,
   });
   await assert.rejects(() => composer(new FormData()), error => error === successRedirect);
   assert.equal(notices, 0);
@@ -109,6 +110,7 @@ async function main() {
     unstable_rethrow,
     toast: () => notices++,
     json: null,
+    post: undefined,
   });
   await failedComposer(new FormData());
   assert.equal(notices, 1);
@@ -194,6 +196,7 @@ async function main() {
   };
   const prisma = {
     subreddit: {
+      findUnique: async () => ({ flairs: [] }),
       count: countRecent("subreddit"),
       updateMany: async ({ where }) => {
         assert.equal(where.userId, user.id);
@@ -205,6 +208,7 @@ async function main() {
       },
     },
     post: {
+      findFirst: async () => ({ id: "post", userId: "owner" }),
       count: countRecent("post"),
       create: async () => {
         writes++;
