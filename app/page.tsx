@@ -12,6 +12,8 @@ import { Suspense } from "react";
 import { SuspenseCard } from "./components/SuspenseCard";
 import Pagination from "./components/Pagination";
 import { unstable_noStore as noStore } from "next/cache";
+import { pageNumber } from "./lib/validation";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 async function getData(searchParam: string) {
   noStore();
@@ -19,7 +21,7 @@ async function getData(searchParam: string) {
     prisma.post.count(),
     prisma.post.findMany({
       take: 10,
-      skip: searchParam ? (Number(searchParam) - 1) * 10 : 0,
+      skip: (pageNumber(searchParam) - 1) * 10,
       select: {
         title: true,
         createdAt: true,
@@ -54,21 +56,22 @@ async function getData(searchParam: string) {
   return { data, count };
 }
 
-export default function Home({
+export default async function Home({
   searchParams,
 }: {
-  searchParams: { page: string };
+  searchParams: Promise<{ page: string }>;
 }) {
+  const query = await searchParams;
   return (
     <>
-      <div className="max-w-[1000px] mx-auto flex gap-x-10 mt-4 mb-10">
-        <div className="w-[65%] flex flex-col gap-y-5">
+      <div className="max-w-[1000px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
+        <div className="w-full md:w-[65%] min-w-0 flex flex-col gap-y-5">
           <CreatePostCard />
-          <Suspense fallback={<SuspenseCard />} key={searchParams.page}>
-            <ShowItems searchParams={searchParams} />
+          <Suspense fallback={<SuspenseCard />} key={query.page}>
+            <ShowItems searchParams={query} />
           </Suspense>
         </div>
-        <div className="w-[35%]">
+        <div className="w-full md:w-[35%]">
           <Card>
             <Image src={Banner} alt="Banner" />
             <div className="p-2 sm:p-4">
@@ -101,8 +104,10 @@ export default function Home({
 
 async function ShowItems({ searchParams }: { searchParams: { page: string } }) {
   const { count, data } = await getData(searchParams.page);
+  const user = await getKindeServerSession().getUser();
   return (
     <>
+      {data.length === 0 && <Card className="p-6 text-center">No posts here yet. <Link className="text-primary underline" href="/communities">Explore communities</Link> to start a discussion.</Card>}
       {data.map((post) => (
         <PostCard
           id={post.id}
@@ -112,6 +117,7 @@ async function ShowItems({ searchParams }: { searchParams: { page: string } }) {
           title={post.title}
           key={post.id}
           commentAmount={post.Comment.length}
+          currentVote={post.Vote.find((vote) => vote.userId === user?.id)?.voteType}
           userName={post.User?.userName as string}
           voteCount={post.Vote.reduce((acc, vote) => {
             if (vote.voteType === "UP") return acc + 1;

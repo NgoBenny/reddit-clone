@@ -17,6 +17,7 @@ interface iAppProps {
   imageString: string | null;
   voteCount: number;
   commentAmount: number;
+  currentVote?: "UP" | "DOWN";
 }
 
 export function PostCard({
@@ -28,6 +29,7 @@ export function PostCard({
   userName,
   voteCount,
   commentAmount,
+  currentVote,
 }: iAppProps) {
   return (
     <Card className="flex relative overflow-hidden">
@@ -35,17 +37,17 @@ export function PostCard({
         <form action={handleVote}>
           <input type="hidden" name="voteDirection" value="UP" />
           <input type="hidden" name="postId" value={id} />
-          <UpVote />
+          <UpVote active={currentVote === "UP"} />
         </form>
         {voteCount}
         <form action={handleVote}>
           <input type="hidden" name="voteDirection" value="DOWN" />
           <input type="hidden" name="postId" value={id} />
-          <DownVote />
+          <DownVote active={currentVote === "DOWN"} />
         </form>
       </div>
 
-      <div>
+      <div className="min-w-0 flex-1 break-words">
         <div className="flex items-center gap-x-2 p-2">
           <Link
             className="font-semibold text-xs sm:text-sm"
@@ -73,9 +75,9 @@ export function PostCard({
               height={300}
               className="w-full h-full object-cover"
             />
-          ) : (
+          ) : jsonContent ? (
             <RenderToJson data={jsonContent} />
-          )}
+          ) : null}
         </div>
 
         <div className="m-3 flex items-center gap-x-5">

@@ -39,17 +39,19 @@ export function SettingsForm({username}: {username: string | null | undefined}) 
             <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
 
             <Separator className="ny-4" />
-            <Label className="text-lg">Username</Label>
+            <Label htmlFor="username" className="text-lg">Username</Label>
             <p className="text-muted-foreground">
                 Change your username here
             </p>
 
             <Input 
+                id="username"
                 defaultValue={username ?? undefined}
                 name="username"
                 required 
                 className="mt-2" 
-                min={2} 
+                minLength={2}
+                pattern="[a-zA-Z0-9_-]{2,21}"
                 maxLength={21} 
             />
 

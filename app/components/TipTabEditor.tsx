@@ -75,8 +75,9 @@ export function TipTabEditor({
   json: JSONContent | null;
 }) {
   const editor = useEditor({
-    extensions: [StarterKit],
-    content: json ?? "Body",
+    immediatelyRender: false,
+    extensions: [StarterKit.configure({ link: false, underline: false })],
+    content: json ?? "",
     editorProps: {
       attributes: {
         class: "prose dark:prose-invert",

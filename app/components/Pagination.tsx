@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { pageNumber } from "../lib/validation";
 
 export const generatePagination = (currentPage: number, totalPages: number) => {
   // If the total number of pages is 7 or less,
@@ -41,7 +42,8 @@ export const generatePagination = (currentPage: number, totalPages: number) => {
 export default function Pagination({ totalPages }: { totalPages: number }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentPage = Number(searchParams.get("page")) || 1;
+  const currentPage = pageNumber(searchParams.get("page"));
+  if (totalPages <= 1) return null;
 
   const createPageURL = (pageNumber: number | string) => {
     const params = new URLSearchParams(searchParams);
@@ -70,7 +72,7 @@ export default function Pagination({ totalPages }: { totalPages: number }) {
 
           return (
             <PaginationNumber
-              key={page}
+              key={`${page}-${index}`}
               href={createPageURL(page)}
               page={page}
               position={position}
@@ -112,7 +114,7 @@ function PaginationNumber({
   );
 
   return isActive || position === "middle" ? (
-    <div className={className}>{page}</div>
+    <div className={className} aria-current={isActive ? "page" : undefined}>{page}</div>
   ) : (
     <Link href={href} className={className}>
       {page}
@@ -149,7 +151,7 @@ function PaginationArrow({
   return isDisabled ? (
     <div className={className}>{icon}</div>
   ) : (
-    <Link className={className} href={href}>
+    <Link className={className} href={href} aria-label={direction === "left" ? "Previous page" : "Next page"}>
       {icon}
     </Link>
   );

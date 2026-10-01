@@ -39,6 +39,7 @@ export function SubDescriptionForm({description, subName}: iAppProps) {
         <form className="mt-3" action={formAction}>
             <input type="hidden" name="subName" value={subName} />
             <Textarea 
+                aria-label="Community description"
                 placeholder="Create your custom description for your subreddit" 
                 maxLength={120} 
                 name="description"

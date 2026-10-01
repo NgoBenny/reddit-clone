@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_noStore as noStore } from "next/cache";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 async function getData(id: string) {
   noStore();
@@ -29,6 +30,7 @@ async function getData(id: string) {
       Vote: {
         select: {
           voteType: true,
+          userId: true,
         },
       },
       Comment: {
@@ -67,17 +69,20 @@ async function getData(id: string) {
   return data;
 }
 
-export default async function PostPage({ params }: { params: { id: string } }) {
-  const data = await getData(params.id);
+export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const data = await getData(id);
+  const user = await getKindeServerSession().getUser();
+  const currentVote = data.Vote.find((vote) => vote.userId === user?.id)?.voteType;
   return (
-    <div className="max-w-[1200px] mx-auto flex gap-x-10 mt-4 mb-10">
-      <div className="w-[70%] flex flex-col gap-y-5">
+    <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
+      <div className="w-full md:w-[70%] min-w-0 flex flex-col gap-y-5">
         <Card className="p-2 flex">
           <div className="flex flex-col items-center gap-y-2 p-2">
             <form action={handleVote}>
               <input type="hidden" name="voteDirection" value="UP" />
               <input type="hidden" name="postId" value={data.id} />
-              <UpVote />
+              <UpVote active={currentVote === "UP"} />
             </form>
             {data.Vote.reduce((acc, vote) => {
               if (vote.voteType === "UP") return acc + 1;
@@ -87,7 +92,7 @@ export default async function PostPage({ params }: { params: { id: string } }) {
             <form action={handleVote}>
               <input type="hidden" name="voteDirection" value="DOWN" />
               <input type="hidden" name="postId" value={data.id} />
-              <DownVote />
+              <DownVote active={currentVote === "DOWN"} />
             </form>
           </div>
 
@@ -118,10 +123,10 @@ export default async function PostPage({ params }: { params: { id: string } }) {
                 </p>
               </div>
 
-              <CopyLink id={params.id} />
+              <CopyLink id={id} />
             </div>
 
-            <CommentForm postId={params.id} />
+            <CommentForm postId={id} />
 
             <Separator className="my-5" />
 
@@ -154,7 +159,7 @@ export default async function PostPage({ params }: { params: { id: string } }) {
         </Card>
       </div>
 
-      <div className="w-[30%]">
+      <div className="w-full md:w-[30%]">
         <Card>
           <div className="bg-muted p-4 font-semibold">About Community</div>
           <div className="p-4">
@@ -179,7 +184,7 @@ export default async function PostPage({ params }: { params: { id: string } }) {
               <Cake className="h-5 w-5 text-muted-foreground" />
               <p className="text-muted-foreground font-medium text-sm">
                 Created:{" "}
-                {new Date(data?.createdAt as Date).toLocaleDateString("en-us", {
+                {new Date(data.Subreddit?.createdAt ?? data.createdAt).toLocaleDateString("en-us", {
                   weekday: "long",
                   year: "numeric",
                   month: "short",
