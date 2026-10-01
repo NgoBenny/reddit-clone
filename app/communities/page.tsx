@@ -25,7 +25,9 @@ export default async function Communities({
       select: {
         name: true,
         description: true,
-        _count: { select: { posts: true } },
+        _count: {
+          select: { posts: { where: { deletedAt: null, removedAt: null } } },
+        },
       },
     }),
   ]);

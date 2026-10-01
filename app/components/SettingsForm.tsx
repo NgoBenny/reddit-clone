@@ -36,7 +36,7 @@ export function SettingsForm({username}: {username: string | null | undefined}) 
                 required 
                 className="mt-2" 
                 minLength={2}
-                pattern="[a-zA-Z0-9_-]{2,21}"
+                pattern="[a-zA-Z0-9_\-]{2,21}"
                 maxLength={21} 
             />
 

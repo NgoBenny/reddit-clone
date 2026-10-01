@@ -37,7 +37,12 @@ async function main() {
     await requireRls(local);
     // Compare an actual execution of the baseline with the restored backup.
     run("psql", [...connection, "-v", "ON_ERROR_STOP=1", "-c", "CREATE DATABASE baseline_check"]);
-    run("psql", [...connection.slice(0, -1), "baseline_check", "-v", "ON_ERROR_STOP=1", "--single-transaction", "-f", "prisma/migrations/0_init/migration.sql"]);
+    const history = await local.$queryRaw`SELECT to_regclass('public._prisma_migrations') IS NOT NULL AS present`;
+    const applied = history[0].present ? await local.$queryRaw`SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL ORDER BY started_at` : [{ migration_name: "0_init" }];
+    for (const migration of applied) {
+      if (!/^[a-zA-Z0-9_-]+$/.test(migration.migration_name)) throw new Error("Invalid migration name in backup");
+      run("psql", [...connection.slice(0, -1), "baseline_check", "-v", "ON_ERROR_STOP=1", "--single-transaction", "-f", join("prisma/migrations", migration.migration_name, "migration.sql")]);
+    }
     const diff = spawnSync(process.execPath, [require.resolve("prisma/build/index.js"), "migrate", "diff", "--from-url", localUrl, "--to-url", localUrl.replace("/postgres", "/baseline_check"), "--exit-code"], { encoding: "utf8", timeout: 120000 });
     if (diff.error || diff.status !== 0) throw new Error("Executed baseline differs from restored schema.");
     if (process.argv[3] === "--security-test") {
@@ -49,7 +54,7 @@ async function main() {
     }
     writeFileSync(file + ".json", JSON.stringify({ ...receipt, restoreTested: true, verifiedAt: new Date().toISOString(), restoredCounts, liveCounts, rlsEnabled: true, baselineMatched: true }, null, 2));
     console.log("Isolated restore passed: row counts, RLS, constraints and executed baseline match.");
-    console.log(`Counts (User, Subreddit, Post, Vote, Comment): ${restoredCounts.join(', ')}`);
+    console.log(`Application table counts: ${restoredCounts.join(', ')}`);
   } finally {
     await Promise.all([local.$disconnect(), live.$disconnect()]);
     if (started) {

@@ -5,6 +5,9 @@ import Link from "next/link";
 import { CopyLink } from "./CopyLink";
 import { VoteControls } from "./VoteControls";
 import { RenderToJson } from "./RendertoJson";
+import { ActionForm } from "./ActionForm";
+import { setSavedPost } from "../actions";
+import { SubmitButton } from "./SubmitButtons";
 
 interface iAppProps {
   title: string;
@@ -16,6 +19,8 @@ interface iAppProps {
   voteCount: number;
   commentAmount: number;
   currentVote?: "UP" | "DOWN";
+  flair?: string | null;
+  saved?: boolean;
 }
 
 export function PostCard({
@@ -28,11 +33,17 @@ export function PostCard({
   voteCount,
   commentAmount,
   currentVote,
+  flair,
+  saved = false,
 }: iAppProps) {
   return (
     <Card className="flex relative overflow-hidden">
-      <VoteControls postId={id} voteCount={voteCount} currentVote={currentVote}
-        className="flex flex-col items-center gap-y-2 bg-muted p-2" />
+      <VoteControls
+        postId={id}
+        voteCount={voteCount}
+        currentVote={currentVote}
+        className="flex flex-col items-center gap-y-2 bg-muted p-2"
+      />
 
       <div className="min-w-0 flex-1 break-words">
         <div className="flex items-center gap-x-2 p-2">
@@ -43,11 +54,17 @@ export function PostCard({
             r/{subName}
           </Link>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Posted by: <span className="hover:text-primary">u/{userName}</span>
+            Posted by:{" "}
+            <Link href={`/u/${userName}`} className="hover:text-primary">
+              u/{userName}
+            </Link>
           </p>
         </div>
 
         <div className="px-2">
+          {flair && (
+            <span className="text-xs rounded bg-muted px-2 py-1">{flair}</span>
+          )}
           <Link href={`/post/${id}`}>
             <h1 className="font-medium mt-1 text-lg sm:text-xl">{title}</h1>
           </Link>
@@ -68,14 +85,22 @@ export function PostCard({
         </div>
 
         <div className="m-3 flex items-center gap-x-5">
-          <div className="flex items-center gap-x-1">
+          <Link
+            href={`/post/${id}#comments`}
+            className="flex items-center gap-x-1"
+          >
             <MessageCircle className="h-4 w-4 text-muted-foreground" />
             <p className="text-muted-foreground font-medium text-sm sm:text-xs ">
               {commentAmount} Comments
             </p>
-          </div>
+          </Link>
 
           <CopyLink id={id} />
+          <ActionForm action={setSavedPost}>
+            <input type="hidden" name="postId" value={id} />
+            <input type="hidden" name="save" value={String(!saved)} />
+            <SubmitButton text={saved ? "Unsave" : "Save"} size="sm" />
+          </ActionForm>
         </div>
       </div>
     </Card>

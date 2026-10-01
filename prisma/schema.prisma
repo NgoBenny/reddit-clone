@@ -9,54 +9,72 @@ generator client {
 }
 
 datasource db {
-  provider          = "postgresql"
-  url               = env("DATABASE_URL")
-  directUrl         = env("DIRECT_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model User{
-  id    String @id
-  email String
-  firstName String
-  lastName String
-  imageUrl String?
-  userName String? @unique
+model User {
+  id                String      @id
+  email             String
+  firstName         String
+  lastName          String
+  imageUrl          String?
+  userName          String?     @unique
   createdSubreddits Subreddit[]
 
-  createdAt DateTime @default(now())
-  Vote Vote[]
-  Comment Comment[]
+  createdAt DateTime  @default(now())
+  Vote      Vote[]
+  Comment   Comment[]
 
-  posts Post[]
+  posts         Post[]
+  memberships   Membership[]
+  savedPosts    SavedPost[]
+  reports       Report[]
+  notifications Notification[]
 }
 
 model Subreddit {
-  id String @id @default(uuid())
-  name String @unique
+  id          String   @id @default(uuid())
+  name        String   @unique
   description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  User User? @relation(fields: [userId], references: [id])
-  userId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  User        User?    @relation(fields: [userId], references: [id])
+  userId      String?
 
-  posts Post[]
+  posts       Post[]
+  rules       String       @default("")
+  flairs      String[]     @default([])
+  memberships Membership[]
 }
 
 model Post {
-  id String @id @default(uuid())
-  title String
+  id          String  @id @default(uuid())
+  title       String
   textContent Json?
   imageString String?
 
-  Vote Vote[]
+  Vote    Vote[]
   Comment Comment[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  Subreddit Subreddit? @relation(fields: [subName], references: [name])
-  subName String?
-  User User? @relation(fields: [userId], references: [id])
-  userId String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  Subreddit     Subreddit?     @relation(fields: [subName], references: [name])
+  subName       String?
+  User          User?          @relation(fields: [userId], references: [id])
+  userId        String?
+  deletedAt     DateTime?
+  removedAt     DateTime?
+  editedAt      DateTime?
+  bodyText      String         @default("")
+  flair         String?
+  savedBy       SavedPost[]
+  reports       Report[]
+  notifications Notification[]
+
+  @@index([subName, createdAt])
+  @@index([userId, createdAt])
 }
 
 enum TypeOfVote {
@@ -67,21 +85,87 @@ enum TypeOfVote {
 model Vote {
   id String @id @default(uuid())
 
-  Post Post? @relation(fields: [postId], references: [id])
+  Post   Post?   @relation(fields: [postId], references: [id])
   postId String?
-  User User? @relation(fields: [userId], references: [id])
+  User   User?   @relation(fields: [userId], references: [id])
   userId String?
-  
+
   voteType TypeOfVote
 }
 
 model Comment {
-  id String @id @default(uuid())
-  text String
+  id        String   @id @default(uuid())
+  text      String
   createdAt DateTime @default(now())
 
-  User User? @relation(fields: [userId], references: [id])
-  userId String?
-  Post Post? @relation(fields: [postId], references: [id])
-  postId String?
+  User          User?          @relation(fields: [userId], references: [id])
+  userId        String?
+  Post          Post?          @relation(fields: [postId], references: [id])
+  postId        String?
+  parentId      String?
+  parent        Comment?       @relation("Replies", fields: [parentId], references: [id])
+  replies       Comment[]      @relation("Replies")
+  editedAt      DateTime?
+  deletedAt     DateTime?
+  removedAt     DateTime?
+  reports       Report[]
+  notifications Notification[]
+
+  @@index([postId, createdAt])
+  @@index([userId, createdAt])
+  @@index([parentId])
+}
+
+model Membership {
+  userId      String
+  subredditId String
+  User        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Subreddit   Subreddit @relation(fields: [subredditId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@id([userId, subredditId])
+  @@index([subredditId])
+}
+
+model SavedPost {
+  userId    String
+  postId    String
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, postId])
+  @@index([postId])
+}
+
+model Report {
+  id         String    @id @default(uuid())
+  userId     String
+  User       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId     String?
+  Post       Post?     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId  String?
+  Comment    Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  reason     String
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([resolvedAt, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId    String
+  Post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String
+  Comment   Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  kind      String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([userId, createdAt])
 }

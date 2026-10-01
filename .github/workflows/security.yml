@@ -10,6 +10,21 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: browser_test
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["55440:5432"]
+        options: >-
+          --health-cmd "pg_isready -U browser_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://browser_test@127.0.0.1:55440/postgres
+      DIRECT_URL: postgresql://browser_test@127.0.0.1:55440/postgres
+      FEATURE_TEST_URL: postgresql://browser_test@127.0.0.1:55440/postgres
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -20,4 +35,6 @@ jobs:
           package-manager-cache: false
       - run: npm ci
       - run: npm test
+      - run: npx prisma migrate deploy
+      - run: npm run test:features
       - run: npm audit --audit-level=high

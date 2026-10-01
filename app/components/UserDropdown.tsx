@@ -11,12 +11,13 @@ import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 interface iAppProps {
   userImage: string | null;
+  userName?: string | null;
 }
 
-export function UserDropdown({ userImage }: iAppProps) {
+export function UserDropdown({ userImage, userName }: iAppProps) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
+      <DropdownMenuTrigger aria-label="Account menu">
         <div className="rounded-full border px-2 py-2 lg:px-4 lg:py-2 flex items-center gap-x-3">
           <MenuIcon className="w-6 h-6 lg:w-5 lg:h-5" />
           <img
@@ -32,18 +33,29 @@ export function UserDropdown({ userImage }: iAppProps) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuItem>
+        {userName && (
+          <DropdownMenuItem asChild>
+            <Link href={`/u/${userName}`}>My profile</Link>
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem asChild>
+          <Link href="/saved">Saved posts</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/?feed=home">Joined communities feed</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link className="w-full" href="/">
             Homepage
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link className="w-full" href="/settings">
             Settings
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <LogoutLink className="w-full">Logout</LogoutLink>
         </DropdownMenuItem>
       </DropdownMenuContent>
