@@ -14,7 +14,7 @@ import { SubmitButton } from "@/app/components/SubmitButtons";
 import { UploadDropzone } from "@/app/components/Uploadthing";
 import { useState } from "react";
 import { createPost } from "@/app/actions";
-import { useParams } from "next/navigation";
+import { useParams, unstable_rethrow } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import { JSONContent } from "@tiptap/react";
 
@@ -50,7 +50,10 @@ export default function CreatePostRoute() {
 
   async function createPostReddit(formData: FormData) {
     try { await createPost({ jsonContent: json }, formData); }
-    catch { toast({ title: "Couldn’t create post", description: "Check your title, content, and community, then try again.", variant: "destructive" }); }
+    catch (error) {
+      unstable_rethrow(error);
+      toast({ title: "Couldn’t create post", description: "Check your title, content, and community, then try again.", variant: "destructive" });
+    }
   }
   return (
     <div className="max-w-[1000px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4">
@@ -109,6 +112,7 @@ export default function CreatePostRoute() {
                     className="ut-button:bg-primary ut-button:ut-readying:bg-primary/50 ut-label:text-primary ut-button:ut-uploading:bg-primary/50 
                   ut-button:ut-uploading:after:bg-primary"
                     endpoint="imageUploader"
+                    skipPolling
                     onClientUploadComplete={(res) => {
                       setImageUrl(res[0].url);
                     }}

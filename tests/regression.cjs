@@ -31,6 +31,34 @@ const form = (values) => {
 };
 
 async function main() {
+  // Exercise the actual composer handler: redirects must not show failure toasts.
+  const source = ts.createSourceFile("composer.tsx", fs.readFileSync("app/r/[id]/create/page.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let handler;
+  function findHandler(node) {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === "createPostReddit") handler = node.getText(source);
+    ts.forEachChild(node, findHandler);
+  }
+  findHandler(source);
+  assert.ok(handler);
+  let notices = 0;
+  const { unstable_rethrow, redirect } = require("next/navigation");
+  const successRedirect = (() => { try { redirect("/post/test"); } catch (error) { return error; } })();
+  const composer = vm.runInNewContext(ts.transpileModule(`(${handler})`, {}).outputText, {
+    createPost: async () => { throw successRedirect; },
+    unstable_rethrow,
+    toast: () => notices++,
+    json: null,
+  });
+  await assert.rejects(() => composer(new FormData()), error => error === successRedirect);
+  assert.equal(notices, 0);
+  const failedComposer = vm.runInNewContext(ts.transpileModule(`(${handler})`, {}).outputText, {
+    createPost: async () => { throw new Error("Database unavailable"); },
+    unstable_rethrow,
+    toast: () => notices++,
+    json: null,
+  });
+  await failedComposer(new FormData());
+  assert.equal(notices, 1);
   for (const value of [
     undefined,
     "",

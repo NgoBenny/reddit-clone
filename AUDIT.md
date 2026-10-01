@@ -109,6 +109,12 @@ npm run dev
 | Lint | Passed with two existing warnings for unoptimized avatar `<img>` elements |
 | Dependency audit | Zero known vulnerabilities after updates, including patched Sharp/PostCSS overrides |
 | Live site | Public homepage loads recovered posts after hosted database recovery; repair PR is not deployed |
-| Live DB/OAuth/uploads | Owner restored application data; live OAuth and uploads remain unverified |
+| Live DB/OAuth/uploads | Preview login, community creation/description updates, rich-text posting, persistent comments and vote toggle/switch passed; image upload retest pending |
 
 The successful build uses fake auth configuration only to compile routes, and does not validate real Kinde login. No fake credentials were saved to a production configuration. Full signed-in end-to-end checks require a restored database and valid Kinde/UploadThing configuration. The repair has no schema migration requirement and does not modify the production database.
+
+### Signed-in preview smoke test
+
+Created the clearly labeled `revival-test-0930` community and a rich-text test post with a persistent comment. Confirmed semantic bold/list rendering and vote transitions from 0 to +1 to -1 and back to 0 after reload. Preview authentication required its own Kinde site/callback/redirect URLs to avoid production-domain state mismatch.
+
+The live check found a misleading failure toast after successful publishing: the composer caught Next.js's redirect exception. It now rethrows framework control-flow errors before reporting real failures, with a regression check for both paths. Image upload initialization returned HTTP 200 but completion stalled in the protected preview. The composer now uses UploadThing v6's `skipPolling`, since it needs only the file URL and does not consume server callback data. Upload authorization remains enforced by the existing middleware; deployment protection remains enabled. Image upload and logout/re-login checks are pending retest.
