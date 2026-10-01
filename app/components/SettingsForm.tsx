@@ -8,6 +8,7 @@ import Link from "next/link";
 import { updateUsername } from "../actions";
 import { SubmitButton } from "./SubmitButtons";
 import { useFormState } from "react-dom";
+import { useState } from "react";
 
 import { useActionToast } from "./useActionToast";
 
@@ -18,6 +19,7 @@ const initialState = {
 
 export function SettingsForm({username}: {username: string | null | undefined}) {
     const [state, formAction] = useFormState(updateUsername, initialState);
+    const [draft, setDraft] = useState(username ?? "");
     useActionToast(state);
     return (
         <form action={formAction}>
@@ -31,7 +33,8 @@ export function SettingsForm({username}: {username: string | null | undefined}) 
 
             <Input 
                 id="username"
-                defaultValue={username ?? undefined}
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
                 name="username"
                 required 
                 className="mt-2" 

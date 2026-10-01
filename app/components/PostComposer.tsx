@@ -66,6 +66,7 @@ export default function PostComposer({
     post?.textContent ?? null,
   );
   const [title, setTitle] = useState<null | string>(post?.title ?? null);
+  const [flair, setFlair] = useState(post?.flair ?? "");
 
   async function createPostReddit(formData: FormData) {
     try {
@@ -135,7 +136,8 @@ export default function PostComposer({
                   <select
                     id="post-flair"
                     name="flair"
-                    defaultValue={post?.flair ?? ""}
+                    value={flair}
+                    onChange={(event) => setFlair(event.target.value)}
                     className="border rounded bg-background p-2"
                   >
                     <option value="">No flair</option>

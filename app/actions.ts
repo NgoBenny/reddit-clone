@@ -11,7 +11,14 @@ import {
   RateLimitError,
   rateLimitResult,
 } from "./lib/rate-limit";
-import { formText, validImage, validName, postBody } from "./lib/validation";
+import {
+  formText,
+  validImage,
+  validName,
+  postBody,
+  ValidationError,
+  validationResult,
+} from "./lib/validation";
 
 async function requireUser() {
   const user = await getKindeServerSession().getUser();
@@ -22,7 +29,7 @@ async function requireUser() {
 function optionalText(form: FormData, key: string, max: number) {
   const value = form.get(key) ?? "";
   if (typeof value !== "string" || value.trim().length > max)
-    throw new Error(`Invalid ${key}`);
+    throw new ValidationError(`Invalid ${key}`);
   return value.trim();
 }
 
@@ -33,7 +40,7 @@ async function checkedFlair(subName: string, form: FormData) {
     select: { flairs: true },
   });
   if (!community || (flair && !community.flairs.includes(flair)))
-    throw new Error("Invalid community or flair");
+    throw new ValidationError("Invalid community or flair");
   return flair || null;
 }
 
@@ -41,28 +48,32 @@ export async function editPost(
   { jsonContent }: { jsonContent: JSONContent | null },
   form: FormData,
 ) {
-  const user = await requireUser();
-  const id = formText(form, "postId", 100);
-  const post = await prisma.post.findFirst({
-    where: { id, userId: user.id, deletedAt: null, removedAt: null },
-    select: { subName: true },
-  });
-  if (!post?.subName)
-    throw new Error("Only the author can edit an available post");
-  const body = postBody(jsonContent);
-  const result = await prisma.post.updateMany({
-    where: { id, userId: user.id, deletedAt: null, removedAt: null },
-    data: {
-      title: formText(form, "title", 300),
-      ...body,
-      textContent: jsonContent == null ? Prisma.DbNull : body.textContent,
-      flair: await checkedFlair(post.subName, form),
-      editedAt: new Date(),
-    },
-  });
-  if (!result.count) throw new Error("Post unavailable");
-  revalidatePath("/", "layout");
-  redirect(`/post/${id}`);
+  try {
+    const user = await requireUser();
+    const id = formText(form, "postId", 100);
+    const post = await prisma.post.findFirst({
+      where: { id, userId: user.id, deletedAt: null, removedAt: null },
+      select: { subName: true },
+    });
+    if (!post?.subName)
+      throw new Error("Only the author can edit an available post");
+    const body = postBody(jsonContent);
+    const result = await prisma.post.updateMany({
+      where: { id, userId: user.id, deletedAt: null, removedAt: null },
+      data: {
+        title: formText(form, "title", 300),
+        ...body,
+        textContent: jsonContent == null ? Prisma.DbNull : body.textContent,
+        flair: await checkedFlair(post.subName, form),
+        editedAt: new Date(),
+      },
+    });
+    if (!result.count) throw new Error("Post unavailable");
+    revalidatePath("/", "layout");
+    redirect(`/post/${id}`);
+  } catch (error) {
+    return validationResult(error);
+  }
 }
 
 export async function deleteContent(form: FormData) {
@@ -94,18 +105,22 @@ export async function deleteContent(form: FormData) {
 }
 
 export async function editComment(form: FormData) {
-  const user = await requireUser();
-  const result = await prisma.comment.updateMany({
-    where: {
-      id: formText(form, "id", 100),
-      userId: user.id,
-      deletedAt: null,
-      removedAt: null,
-    },
-    data: { text: formText(form, "comment", 5000), editedAt: new Date() },
-  });
-  if (!result.count) throw new Error("Only the author can edit this comment");
-  revalidatePath("/", "layout");
+  try {
+    const user = await requireUser();
+    const result = await prisma.comment.updateMany({
+      where: {
+        id: formText(form, "id", 100),
+        userId: user.id,
+        deletedAt: null,
+        removedAt: null,
+      },
+      data: { text: formText(form, "comment", 5000), editedAt: new Date() },
+    });
+    if (!result.count) throw new Error("Only the author can edit this comment");
+    revalidatePath("/", "layout");
+  } catch (error) {
+    return validationResult(error);
+  }
 }
 
 export async function setMembership(form: FormData) {
@@ -148,45 +163,60 @@ export async function setSavedPost(form: FormData) {
 }
 
 export async function reportContent(form: FormData) {
-  const user = await requireUser();
-  const kind = formText(form, "kind", 10);
-  const id = formText(form, "id", 100);
-  const reason = formText(form, "reason", 500);
-  if (kind !== "post" && kind !== "comment")
-    throw new Error("Invalid content type");
-  const postId = kind === "post" ? id : null;
-  const commentId = kind === "comment" ? id : null;
-  const available =
-    kind === "post"
-      ? await prisma.post.findFirst({
-          where: { id, deletedAt: null, removedAt: null },
-          select: { id: true },
-        })
-      : await prisma.comment.findFirst({
+  try {
+    const user = await requireUser();
+    const kind = formText(form, "kind", 10);
+    const id = formText(form, "id", 100);
+    const reason = formText(form, "reason", 500);
+    if (kind !== "post" && kind !== "comment")
+      throw new ValidationError("Invalid content type");
+    const postId = kind === "post" ? id : null;
+    const commentId = kind === "comment" ? id : null;
+    const available =
+      kind === "post"
+        ? await prisma.post.findFirst({
+            where: { id, deletedAt: null, removedAt: null },
+            select: { id: true },
+          })
+        : await prisma.comment.findFirst({
+            where: {
+              id,
+              deletedAt: null,
+              removedAt: null,
+            },
+            select: { id: true },
+          });
+    if (!available) throw new Error("Content unavailable");
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`reddit:report:${user.id}`}, 0))`;
+      const where = { userId: user.id, postId, commentId };
+      const previous = await tx.report.findFirst({
+        where,
+        select: { resolvedAt: true },
+      });
+      if (previous)
+        return {
+          message: previous.resolvedAt
+            ? "You already reported this content; a moderator has reviewed it."
+            : "You already reported this content; it is awaiting moderator review.",
+        };
+      if (
+        (await tx.report.count({
           where: {
-            id,
-            deletedAt: null,
-            removedAt: null,
+            userId: user.id,
+            createdAt: { gte: new Date(Date.now() - 3600000) },
           },
-          select: { id: true },
-        });
-  if (!available) throw new Error("Content unavailable");
-  await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`reddit:report:${user.id}`}, 0))`;
-    const where = { userId: user.id, postId, commentId };
-    if (await tx.report.findFirst({ where })) return;
-    if (
-      (await tx.report.count({
-        where: {
-          userId: user.id,
-          createdAt: { gte: new Date(Date.now() - 3600000) },
-        },
-      })) >= 20
-    )
-      throw new Error("Report limit reached. Please try later.");
-    await tx.report.create({ data: { ...where, reason } });
-  });
-  revalidatePath("/", "layout");
+        })) >= 20
+      )
+        throw new ValidationError("Report limit reached. Please try later.");
+      await tx.report.create({ data: { ...where, reason } });
+      return { message: "Report sent to the community moderator" };
+    });
+    revalidatePath("/", "layout");
+    return result;
+  } catch (error) {
+    return validationResult(error);
+  }
 }
 
 export async function resolveReport(form: FormData) {
@@ -235,26 +265,32 @@ export async function resolveReport(form: FormData) {
 }
 
 export async function updateCommunityRules(form: FormData) {
-  const user = await requireUser();
-  const flairs = optionalText(form, "flairs", 800)
-    .split(/\r?\n/)
-    .map((value) => value.trim())
-    .filter(Boolean);
-  if (
-    flairs.length > 20 ||
-    flairs.some((value) => value.length > 40) ||
-    new Set(flairs).size !== flairs.length
-  )
-    throw new Error(
-      "Use up to 20 unique flair labels, at most 40 characters each",
-    );
-  const result = await prisma.subreddit.updateMany({
-    where: { name: formText(form, "subName", 21), userId: user.id },
-    data: { rules: optionalText(form, "rules", 5000), flairs },
-  });
-  if (!result.count)
-    throw new Error("Only the community moderator can update rules and flair");
-  revalidatePath("/", "layout");
+  try {
+    const user = await requireUser();
+    const flairs = optionalText(form, "flairs", 800)
+      .split(/\r?\n/)
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (
+      flairs.length > 20 ||
+      flairs.some((value) => value.length > 40) ||
+      new Set(flairs).size !== flairs.length
+    )
+      throw new ValidationError(
+        "Use up to 20 unique flair labels, at most 40 characters each",
+      );
+    const result = await prisma.subreddit.updateMany({
+      where: { name: formText(form, "subName", 21), userId: user.id },
+      data: { rules: optionalText(form, "rules", 5000), flairs },
+    });
+    if (!result.count)
+      throw new Error(
+        "Only the community moderator can update rules and flair",
+      );
+    revalidatePath("/", "layout");
+  } catch (error) {
+    return validationResult(error);
+  }
 }
 
 export async function markNotificationsRead(form: FormData) {
@@ -392,34 +428,38 @@ export async function createPost(
   { jsonContent }: { jsonContent: JSONContent | null },
   formData: FormData,
 ) {
-  const user = await requireUser();
+  try {
+    const user = await requireUser();
 
-  const title = formText(formData, "title", 300);
-  const imageUrl = formData.get("imageUrl") as string | null;
-  const subName = formText(formData, "subName", 21);
-  if (imageUrl && (typeof imageUrl !== "string" || !validImage(imageUrl)))
-    throw new Error("Invalid image URL");
-  const body = postBody(jsonContent);
-  const flair = await checkedFlair(subName, formData);
+    const title = formText(formData, "title", 300);
+    const imageUrl = formData.get("imageUrl") as string | null;
+    const subName = formText(formData, "subName", 21);
+    if (imageUrl && (typeof imageUrl !== "string" || !validImage(imageUrl)))
+      throw new ValidationError("Invalid image URL");
+    const body = postBody(jsonContent);
+    const flair = await checkedFlair(subName, formData);
 
-  const data = await createLimited(user.id, "post", (tx) =>
-    tx.post.create({
-      data: {
-        title: title,
-        imageString: imageUrl || undefined,
-        subName: subName,
-        userId: user.id,
-        ...body,
-        flair,
-      },
-    }),
-  ).catch(rateLimitResult);
+    const data = await createLimited(user.id, "post", (tx) =>
+      tx.post.create({
+        data: {
+          title: title,
+          imageString: imageUrl || undefined,
+          subName: subName,
+          userId: user.id,
+          ...body,
+          flair,
+        },
+      }),
+    ).catch(rateLimitResult);
 
-  if ("error" in data) return data;
+    if ("error" in data) return data;
 
-  revalidatePath("/");
-  revalidatePath(`/r/${subName}`);
-  return redirect(`/post/${data.id}`);
+    revalidatePath("/");
+    revalidatePath(`/r/${subName}`);
+    return redirect(`/post/${data.id}`);
+  } catch (error) {
+    return validationResult(error);
+  }
 }
 
 export async function handleVote(formData: FormData) {
@@ -466,55 +506,61 @@ export async function handleVote(formData: FormData) {
 }
 
 export async function createComment(formData: FormData) {
-  const user = await requireUser();
+  try {
+    const user = await requireUser();
 
-  const comment = formText(formData, "comment", 5000);
-  const postId = formText(formData, "postId", 100);
+    const comment = formText(formData, "comment", 5000);
+    const postId = formText(formData, "postId", 100);
 
-  const parentId = optionalText(formData, "parentId", 100) || null;
-  const result = await createLimited(user.id, "comment", async (tx) => {
-    const post = await tx.post.findFirst({
-      where: { id: postId, deletedAt: null, removedAt: null },
-      select: { userId: true },
-    });
-    if (!post) throw new Error("Post unavailable");
-    const parent = parentId
-      ? await tx.comment.findFirst({
-          where: { id: parentId, postId },
-          select: { userId: true },
-        })
-      : null;
-    if (parentId && !parent) throw new Error("Reply must belong to this post");
-    let ancestor = parentId;
-    for (let depth = 0; ancestor; depth++) {
-      if (depth >= 9) throw new Error("Reply nesting limit reached");
-      ancestor =
-        (
-          await tx.comment.findUnique({
-            where: { id: ancestor },
-            select: { parentId: true },
+    const parentId = optionalText(formData, "parentId", 100) || null;
+    const result = await createLimited(user.id, "comment", async (tx) => {
+      const post = await tx.post.findFirst({
+        where: { id: postId, deletedAt: null, removedAt: null },
+        select: { userId: true },
+      });
+      if (!post) throw new Error("Post unavailable");
+      const parent = parentId
+        ? await tx.comment.findFirst({
+            where: { id: parentId, postId },
+            select: { userId: true },
           })
-        )?.parentId ?? null;
-    }
-    const created = await tx.comment.create({
-      data: { text: comment, userId: user.id, postId, parentId },
-    });
-    const recipients = new Set([post.userId, parent?.userId]);
-    recipients.delete(user.id);
-    await tx.notification.createMany({
-      data: [...recipients]
-        .filter((id): id is string => !!id)
-        .map((userId) => ({
-          userId,
-          postId,
-          commentId: created.id,
-          kind: parent?.userId === userId ? "REPLY" : "COMMENT",
-        })),
-    });
-    return created;
-  }).catch(rateLimitResult);
-  if ("error" in result) return result;
+        : null;
+      if (parentId && !parent)
+        throw new ValidationError("Reply must belong to this post");
+      let ancestor = parentId;
+      for (let depth = 0; ancestor; depth++) {
+        if (depth >= 9)
+          throw new ValidationError("Reply nesting limit reached");
+        ancestor =
+          (
+            await tx.comment.findUnique({
+              where: { id: ancestor },
+              select: { parentId: true },
+            })
+          )?.parentId ?? null;
+      }
+      const created = await tx.comment.create({
+        data: { text: comment, userId: user.id, postId, parentId },
+      });
+      const recipients = new Set([post.userId, parent?.userId]);
+      recipients.delete(user.id);
+      await tx.notification.createMany({
+        data: [...recipients]
+          .filter((id): id is string => !!id)
+          .map((userId) => ({
+            userId,
+            postId,
+            commentId: created.id,
+            kind: parent?.userId === userId ? "REPLY" : "COMMENT",
+          })),
+      });
+      return created;
+    }).catch(rateLimitResult);
+    if ("error" in result) return result;
 
-  revalidatePath(`/post/${postId}`);
-  revalidatePath("/", "layout");
+    revalidatePath(`/post/${postId}`);
+    revalidatePath("/", "layout");
+  } catch (error) {
+    return validationResult(error);
+  }
 }

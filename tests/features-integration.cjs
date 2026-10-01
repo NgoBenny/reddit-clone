@@ -89,16 +89,17 @@ async function main() {
   });
   assert.equal(post.flair, "Question");
   assert.equal(post.bodyText, "First body");
-  await assert.rejects(
-    () =>
-      actions.createPost(
+  assert.match(
+    (
+      await actions.createPost(
         { jsonContent: null },
         form({
           subName: "browser-test",
           title: "Invalid flair",
           flair: "Fake",
         }),
-      ),
+      )
+    ).error,
     /flair/,
   );
   actor = "browser-member";
@@ -129,15 +130,16 @@ async function main() {
   await actions.createComment(
     form({ postId: post.id, comment: "Nested reply", parentId: comment.id }),
   );
-  await assert.rejects(
-    () =>
-      actions.createComment(
+  assert.match(
+    (
+      await actions.createComment(
         form({
           postId: post.id,
           comment: "Invalid reply",
           parentId: "missing-parent",
         }),
-      ),
+      )
+    ).error,
     /belong/,
   );
   assert.equal(await db.notification.count({ where: { userId: actor } }), 1);
@@ -184,8 +186,13 @@ async function main() {
   await actions.reportContent(
     form({ kind: "post", id: post.id, reason: "Spam" }),
   );
-  await actions.reportContent(
-    form({ kind: "post", id: post.id, reason: "Spam twice" }),
+  assert.match(
+    (
+      await actions.reportContent(
+        form({ kind: "post", id: post.id, reason: "Spam twice" }),
+      )
+    ).message,
+    /awaiting moderator review/,
   );
   const report = await db.report.findFirst({ where: { postId: post.id } });
   assert.equal(await db.report.count({ where: { postId: post.id } }), 1);
@@ -195,8 +202,49 @@ async function main() {
     /moderator/,
   );
   actor = "browser-moderator";
+  assert.match(
+    (
+      await actions.updateCommunityRules(
+        form({
+          subName: "browser-test",
+          rules: "Draft",
+          flairs: "Question\nQuestion",
+        }),
+      )
+    ).error,
+    /unique flair/,
+  );
+  assert.match(
+    (await actions.createComment(form({ postId: post.id, comment: "   " })))
+      .error,
+    /Invalid comment/,
+  );
   await actions.resolveReport(
-    form({ reportId: report.id, decision: "remove" }),
+    form({ reportId: report.id, decision: "dismiss" }),
+  );
+  actor = "browser-member";
+  assert.match(
+    (
+      await actions.reportContent(
+        form({ kind: "post", id: post.id, reason: "Again" }),
+      )
+    ).message,
+    /has reviewed/,
+  );
+  assert.equal(
+    await db.report.count({ where: { postId: post.id, resolvedAt: null } }),
+    0,
+  );
+  actor = "browser-author";
+  await actions.reportContent(
+    form({ kind: "post", id: post.id, reason: "New reporter" }),
+  );
+  const openReport = await db.report.findFirst({
+    where: { postId: post.id, resolvedAt: null },
+  });
+  actor = "browser-moderator";
+  await actions.resolveReport(
+    form({ reportId: openReport.id, decision: "remove" }),
   );
   assert.ok((await db.post.findUnique({ where: { id: post.id } })).removedAt);
   await assert.rejects(

@@ -10,7 +10,9 @@ export function ActionForm({
   success,
   className,
 }: {
-  action: (form: FormData) => Promise<unknown>;
+  action: (
+    form: FormData,
+  ) => Promise<void | { error?: string; message?: string }>;
   children: ReactNode;
   confirm?: string;
   success?: string;
@@ -32,10 +34,19 @@ export function ActionForm({
       }}
       action={async (form) => {
         try {
-          await action(form);
+          const result = await action(form);
+          if (result?.error) {
+            toast({
+              title: "Couldn’t save changes",
+              description: result.error,
+              variant: "destructive",
+            });
+            return;
+          }
           const details = ref.current?.closest("details");
           if (details) details.open = false;
-          if (success) toast({ title: success });
+          if (result?.message || success)
+            toast({ title: result?.message || success });
         } catch (error) {
           unstable_rethrow(error);
           toast({

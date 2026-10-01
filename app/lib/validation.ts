@@ -1,3 +1,10 @@
+export class ValidationError extends Error {}
+
+export function validationResult(error: unknown) {
+  if (error instanceof ValidationError) return { error: error.message };
+  throw error;
+}
+
 export function pageNumber(value: unknown): number {
   const page = typeof value === "string" ? Number(value) : NaN;
   return Number.isSafeInteger(page) && page > 0 && page <= 100000 ? page : 1;
@@ -6,7 +13,7 @@ export function pageNumber(value: unknown): number {
 export function formText(form: FormData, key: string, max: number): string {
   const value = form.get(key);
   if (typeof value !== "string" || !value.trim() || value.trim().length > max) {
-    throw new Error(`Invalid ${key}`);
+    throw new ValidationError(`Invalid ${key}`);
   }
   return value.trim();
 }
@@ -79,7 +86,7 @@ export function postBody(json: unknown) {
     (json as { type: string }).type !== "doc" ||
     JSON.stringify(json).length > 50000
   )
-    throw new Error("Invalid or oversized post body");
+    throw new ValidationError("Invalid or oversized post body");
   const text = (node: any): string =>
     node.type === "text" ? node.text : (node.content ?? []).map(text).join(" ");
   return {
