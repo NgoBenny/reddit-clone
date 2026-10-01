@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useFormState } from "react-dom";
+import { useState } from "react";
 
 import { useActionToast } from "@/app/components/useActionToast";
 
@@ -18,6 +19,7 @@ const initialState = {
 
 export default function SubredditPage() {
   const [state, formAction] = useFormState(createCommunity, initialState);
+  const [name, setName] = useState("");
   useActionToast(state);
   return (
     <div className="max-w-[1000px] mx-auto flex flex-col mt-4">
@@ -41,6 +43,8 @@ export default function SubredditPage() {
             id="community-name"
             pattern="[a-zA-Z0-9_\-]{2,21}"
             name="name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
             required
             className="pl-6"
             minLength={2}

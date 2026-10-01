@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { useState } from "react";
 import { deleteContent, editComment, reportContent } from "../actions";
 import { ActionForm } from "./ActionForm";
 import { SubmitButton } from "./SubmitButtons";
@@ -14,6 +16,8 @@ export function ContentActions({
   owner: boolean;
   text?: string;
 }) {
+  const [comment, setComment] = useState(text ?? "");
+  const [reason, setReason] = useState("");
   return (
     <div className="flex flex-wrap items-start gap-3 text-sm my-3">
       {owner && (
@@ -35,7 +39,8 @@ export function ContentActions({
                 <textarea
                   id={`edit-${id}`}
                   name="comment"
-                  defaultValue={text}
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
                   required
                   maxLength={5000}
                   className="w-full border rounded bg-background p-2"
@@ -69,6 +74,8 @@ export function ContentActions({
           <textarea
             id={`report-${id}`}
             name="reason"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
             required
             maxLength={500}
             className="block w-full border rounded bg-background p-2"

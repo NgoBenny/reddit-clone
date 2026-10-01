@@ -4,9 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "./SubmitButtons";
 import { createComment } from "../actions";
-import { useRef } from "react";
-import { useToast } from "@/components/ui/use-toast";
-import { unstable_rethrow } from "next/navigation";
+import { ActionForm } from "./ActionForm";
+import { useState } from "react";
 
 interface iAppProps {
   postId: string;
@@ -14,34 +13,13 @@ interface iAppProps {
 }
 
 export function CommentForm({ postId, parentId }: iAppProps) {
-  const ref = useRef<HTMLFormElement>(null);
-  const { toast } = useToast();
+  const [comment, setComment] = useState("");
   return (
-    <form
-      className="mt-5"
-      action={async (formData) => {
-        try {
-          const result = await createComment(formData);
-          if (result?.error) {
-            toast({
-              title: "Couldn’t add comment",
-              description: result.error,
-              variant: "destructive",
-            });
-            return;
-          }
-          ref.current?.reset();
-        } catch (error) {
-          unstable_rethrow(error);
-          toast({
-            title: "Couldn’t add comment",
-            description: "Your draft is saved here. Please try again.",
-            variant: "destructive",
-          });
-        }
-      }}
-      ref={ref}
-    >
+    <ActionForm className="mt-5" action={async (form) => {
+      const result = await createComment(form);
+      if (!result?.error) setComment("");
+      return result;
+    }}>
       <input type="hidden" name="postId" value={postId}></input>
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
       <Label htmlFor={`comment-input-${parentId || postId}`}>
@@ -54,8 +32,10 @@ export function CommentForm({ postId, parentId }: iAppProps) {
         placeholder="Add a comment"
         className="w-full mt-1 mb-2"
         name="comment"
+        value={comment}
+        onChange={(event) => setComment(event.target.value)}
       />
       <SubmitButton text={parentId ? "Submit reply" : "Comment"} />
-    </form>
+    </ActionForm>
   );
 }

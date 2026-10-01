@@ -3,7 +3,8 @@ import { FeedFilters, PostFeed } from "@/app/components/PostFeed";
 import { SubDescriptionForm } from "@/app/components/SubDescritpionForm";
 import { ActionForm } from "@/app/components/ActionForm";
 import { SubmitButton } from "@/app/components/SubmitButtons";
-import { setMembership, updateCommunityRules } from "@/app/actions";
+import { setMembership } from "@/app/actions";
+import { CommunityRulesForm } from "@/app/components/CommunityRulesForm";
 import prisma from "@/app/lib/db";
 import type { FeedQuery } from "@/app/lib/feed";
 import { Card } from "@/components/ui/card";
@@ -102,32 +103,7 @@ export default async function Community({
                 <summary className="cursor-pointer text-sm font-medium">
                   Edit rules and flair
                 </summary>
-                <ActionForm
-                  action={updateCommunityRules}
-                  success="Rules and flair saved"
-                  className="space-y-3 mt-3"
-                >
-                  <input type="hidden" name="subName" value={id} />
-                  <label className="block text-sm">
-                    Rules
-                    <textarea
-                      name="rules"
-                      maxLength={5000}
-                      defaultValue={community.rules}
-                      className="block w-full border rounded bg-background p-2"
-                    />
-                  </label>
-                  <label className="block text-sm">
-                    Flair labels (one per line)
-                    <textarea
-                      name="flairs"
-                      maxLength={800}
-                      defaultValue={community.flairs.join("\n")}
-                      className="block w-full border rounded bg-background p-2"
-                    />
-                  </label>
-                  <SubmitButton text="Save rules and flair" />
-                </ActionForm>
+                <CommunityRulesForm name={id} rules={community.rules} flairs={community.flairs} />
               </details>
             </>
           )}
