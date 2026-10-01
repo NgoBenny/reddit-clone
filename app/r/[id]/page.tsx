@@ -38,11 +38,7 @@ async function getData(name: string, searchParam: string) {
           skip: (pageNumber(searchParam) - 1) * 10,
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           select: {
-            Comment: {
-              select: {
-                id: true,
-              },
-            },
+            _count: { select: { Comment: true } },
             title: true,
             imageString: true,
             id: true,
@@ -102,7 +98,7 @@ export default async function SubRedditRoute({
                 id={post.id}
                 imageString={post.imageString}
                 subName={data.name}
-                commentAmount={post.Comment.length}
+                commentAmount={post._count.Comment}
                 {...getVoteSummary(post.Vote, user?.id)}
                 title={post.title}
                 userName={post.User?.userName as string}

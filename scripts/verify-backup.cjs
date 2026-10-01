@@ -40,6 +40,13 @@ async function main() {
     run("psql", [...connection.slice(0, -1), "baseline_check", "-v", "ON_ERROR_STOP=1", "--single-transaction", "-f", "prisma/migrations/0_init/migration.sql"]);
     const diff = spawnSync(process.execPath, [require.resolve("prisma/build/index.js"), "migrate", "diff", "--from-url", localUrl, "--to-url", localUrl.replace("/postgres", "/baseline_check"), "--exit-code"], { encoding: "utf8", timeout: 120000 });
     if (diff.error || diff.status !== 0) throw new Error("Executed baseline differs from restored schema.");
+    if (process.argv[3] === "--security-test") {
+      const test = spawnSync(process.execPath, ["tests/rate-limit-integration.cjs"], {
+        env: { ...process.env, DATABASE_URL: localUrl, DIRECT_URL: localUrl, RATE_LIMIT_TEST_URL: localUrl },
+        stdio: "inherit", timeout: 120000,
+      });
+      if (test.error || test.status !== 0) throw new Error("Isolated rate-limit verification failed.");
+    }
     writeFileSync(file + ".json", JSON.stringify({ ...receipt, restoreTested: true, verifiedAt: new Date().toISOString(), restoredCounts, liveCounts, rlsEnabled: true, baselineMatched: true }, null, 2));
     console.log("Isolated restore passed: row counts, RLS, constraints and executed baseline match.");
     console.log(`Counts (User, Subreddit, Post, Vote, Comment): ${restoredCounts.join(', ')}`);

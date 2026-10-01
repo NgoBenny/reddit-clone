@@ -4,25 +4,7 @@ const vm = require("node:vm");
 const ts = require("typescript");
 const { Prisma } = require("@prisma/client");
 
-// Load the real server actions with only external services replaced.
-function load(file, mocks = {}) {
-  const code = ts.transpileModule(fs.readFileSync(file, "utf8"), {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      jsx: ts.JsxEmit.ReactJSX,
-      esModuleInterop: true,
-    },
-  }).outputText;
-  const module = { exports: {} };
-  vm.runInNewContext(code, {
-    exports: module.exports,
-    module,
-    require: (name) => (name in mocks ? mocks[name] : require(name)),
-    console,
-    URL,
-  });
-  return module.exports;
-}
+const { load } = require("./load-ts.cjs");
 const validation = load("app/lib/validation.ts");
 const form = (values) => {
   const result = new FormData();
@@ -31,6 +13,12 @@ const form = (values) => {
 };
 
 async function main() {
+  const config = (await import("../next.config.mjs")).default;
+  const headers = Object.fromEntries((await config.headers())[0].headers.map(({ key, value }) => [key, value]));
+  assert.equal(headers["X-Content-Type-Options"], "nosniff");
+  assert.equal(headers["X-Frame-Options"], "DENY");
+  assert.match(headers["Content-Security-Policy"], /frame-ancestors 'none'/);
+  assert.equal(config.poweredByHeader, false);
   const React = require("react");
   const { renderToStaticMarkup } = require("react-dom/server");
   const { getVoteSummary } = load("app/lib/votes.ts");
@@ -72,12 +60,13 @@ async function main() {
   assert.equal(notifications[0].title, "Success");
   assert.equal(notifications[1].variant, "destructive");
   let commentError;
+  let commentResult;
   let commentResets = 0;
   const { CommentForm } = load("app/components/CommentForm.tsx", {
     react: { ...React, useRef: () => ({ current: { reset: () => commentResets++ } }) },
     "@/components/ui/label": { Label: "label" }, "@/components/ui/textarea": { Textarea: "textarea" },
     "./SubmitButtons": buttons,
-    "../actions": { createComment: async () => { if (commentError) throw commentError; } },
+    "../actions": { createComment: async () => { if (commentError) throw commentError; return commentResult; } },
     "@/components/ui/use-toast": { useToast: () => ({ toast: (notice) => notifications.push(notice) }) },
   });
   const commentAction = CommentForm({ postId: "post" }).props.action;
@@ -90,6 +79,11 @@ async function main() {
   await commentAction(new FormData());
   assert.equal(notifications.length, 3);
   assert.equal(commentResets, 1, "Failed comments must preserve the draft");
+  commentError = undefined;
+  commentResult = { error: "Please try again shortly" };
+  await commentAction(new FormData());
+  assert.equal(commentResets, 1, "Rate-limited comments must preserve the draft");
+  assert.equal(notifications.at(-1).description, commentResult.error);
   // Exercise the actual composer handler: redirects must not show failure toasts.
   const source = ts.createSourceFile("composer.tsx", fs.readFileSync("app/r/[id]/create/page.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let handler;
@@ -192,8 +186,15 @@ async function main() {
     writes = 0,
     failures = 0;
   const invalidations = [];
+  const recentCounts = { post: 0, comment: 0, subreddit: 0 };
+  const countRecent = (kind) => async ({ where }) => {
+    assert.equal(where.userId, user.id);
+    assert.equal(typeof where.createdAt.gte.getTime, "function");
+    return recentCounts[kind];
+  };
   const prisma = {
     subreddit: {
+      count: countRecent("subreddit"),
       updateMany: async ({ where }) => {
         assert.equal(where.userId, user.id);
         if (where.userId === "owner") {
@@ -204,14 +205,17 @@ async function main() {
       },
     },
     post: {
+      count: countRecent("post"),
       create: async () => {
         writes++;
         return { id: "post" };
       },
     },
     comment: {
+      count: countRecent("comment"),
       create: async () => {
         writes++;
+        return { id: "comment" };
       },
     },
     vote: {
@@ -230,9 +234,13 @@ async function main() {
         votes.push(data);
       },
     },
+    $executeRaw: async (sql, key) => {
+      assert.match(sql.join("?"), /pg_advisory_xact_lock/);
+      assert.ok(key.endsWith(`:${user.id}`));
+    },
     $transaction: async (fn, options) => {
-      assert.equal(options.isolationLevel, "Serializable");
-      if (failures-- > 0)
+      assert.ok(["Serializable", "ReadCommitted"].includes(options.isolationLevel));
+      if (options.isolationLevel === "Serializable" && failures-- > 0)
         throw new Prisma.PrismaClientKnownRequestError("conflict", {
           code: "P2034",
           clientVersion: "5.13.0",
@@ -240,7 +248,11 @@ async function main() {
       return fn(prisma);
     },
   };
+  const rateLimit = load("app/lib/rate-limit.ts", {
+    "./db": { __esModule: true, default: prisma },
+  });
   const actions = load("app/actions.ts", {
+    "./lib/rate-limit": rateLimit,
     "./lib/validation": validation,
     "./lib/db": { __esModule: true, default: prisma },
     "@kinde-oss/kinde-auth-nextjs/server": {
@@ -315,7 +327,39 @@ async function main() {
       ),
     /Invalid or oversized/,
   );
+  for (const [kind, limit] of [["post", 3], ["comment", 10], ["subreddit", 2]]) {
+    recentCounts[kind] = limit;
+    const before = writes;
+    await assert.rejects(() => rateLimit.createLimited(user.id, kind, async () => writes++), /creating content too quickly/);
+    assert.equal(writes, before, "Rate-limited writes must not execute");
+    recentCounts[kind] = limit - 1;
+    await rateLimit.createLimited(user.id, kind, async () => writes++);
+    assert.equal(writes, before + 1);
+    recentCounts[kind] = 0;
+  }
+  recentCounts.comment = 10;
+  assert.match((await actions.createComment(form({ postId: "post", comment: "valid" }))).error, /creating content too quickly/);
+  recentCounts.post = 3;
+  assert.match((await actions.createPost({ jsonContent: null }, form({ title: "valid", subName: "test" }))).error, /creating content too quickly/);
+  recentCounts.subreddit = 2;
+  assert.equal((await actions.createCommunity({}, form({ name: "test" }))).status, "error");
+  let uploadGuard;
+  let uploadComplete;
+  load("app/api/uploadthing/core.ts", {
+    "@kinde-oss/kinde-auth-nextjs/server": { getKindeServerSession: () => ({ getUser: async () => user }) },
+    "uploadthing/server": { UploadThingError: class extends Error {} },
+    "uploadthing/next": { createUploadthing: () => () => ({
+      middleware(fn) { uploadGuard = fn; return this; },
+      onUploadComplete(fn) { uploadComplete = fn; return this; },
+    }) },
+  });
+  await uploadGuard({ files: [{ type: "image/png" }] });
+  for (const type of ["image/svg+xml", "text/html", "application/javascript"]) {
+    await assert.rejects(() => uploadGuard({ files: [{ type }] }), /JPEG, PNG, WebP or GIF/);
+  }
+  assert.equal(Object.keys(await uploadComplete()).length, 0);
   user = null;
+  await assert.rejects(() => uploadGuard({ files: [{ type: "image/png" }] }), /Please log in/);
   const beforeUnauthenticated = writes;
   for (const attempt of [
     () => vote("UP"),

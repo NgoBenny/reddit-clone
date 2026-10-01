@@ -29,11 +29,7 @@ async function getData(searchParam: string) {
         textContent: true,
         id: true,
         imageString: true,
-        Comment: {
-          select: {
-            id: true,
-          },
-        },
+        _count: { select: { Comment: true } },
         User: {
           select: {
             userName: true,
@@ -117,7 +113,7 @@ async function ShowItems({ searchParams }: { searchParams: { page: string } }) {
           subName={post.subName as string}
           title={post.title}
           key={post.id}
-          commentAmount={post.Comment.length}
+          commentAmount={post._count.Comment}
           {...getVoteSummary(post.Vote, user?.id)}
           userName={post.User?.userName as string}
         />
