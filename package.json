@@ -11,8 +11,11 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
-    "test": "node tests/regression.cjs",
-    "db:check": "node scripts/check-db.cjs"
+    "test": "node tests/regression.cjs && node tests/database-safety.cjs",
+    "db:check": "node scripts/check-db.cjs",
+    "db:backup": "node scripts/backup-db.cjs",
+    "db:verify-backup": "node scripts/verify-backup.cjs",
+    "db:baseline": "node scripts/baseline-db.cjs"
   },
   "overrides": {
     "next": {
