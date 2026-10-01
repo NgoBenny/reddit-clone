@@ -1,0 +1,2 @@
+# Keep migration checksums stable across Windows and Linux checkouts.
+prisma/migrations/**/*.sql text eol=lf
