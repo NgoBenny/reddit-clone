@@ -1,8 +1,8 @@
-import { handleVote } from "@/app/actions";
+import { getVoteSummary } from "@/app/lib/votes";
 import { CommentForm } from "@/app/components/CommentForm";
 import { CopyLink } from "@/app/components/CopyLink";
 import { RenderToJson } from "@/app/components/RendertoJson";
-import { DownVote, UpVote } from "@/app/components/SubmitButtons";
+import { VoteControls } from "@/app/components/VoteControls";
 import prisma from "@/app/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -73,28 +73,13 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const data = await getData(id);
   const user = await getKindeServerSession().getUser();
-  const currentVote = data.Vote.find((vote) => vote.userId === user?.id)?.voteType;
+  const votes = getVoteSummary(data.Vote, user?.id);
   return (
     <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
       <div className="w-full md:w-[70%] min-w-0 flex flex-col gap-y-5">
         <Card className="p-2 flex">
-          <div className="flex flex-col items-center gap-y-2 p-2">
-            <form action={handleVote}>
-              <input type="hidden" name="voteDirection" value="UP" />
-              <input type="hidden" name="postId" value={data.id} />
-              <UpVote active={currentVote === "UP"} />
-            </form>
-            {data.Vote.reduce((acc, vote) => {
-              if (vote.voteType === "UP") return acc + 1;
-              if (vote.voteType === "DOWN") return acc - 1;
-              return acc;
-            }, 0)}
-            <form action={handleVote}>
-              <input type="hidden" name="voteDirection" value="DOWN" />
-              <input type="hidden" name="postId" value={data.id} />
-              <DownVote active={currentVote === "DOWN"} />
-            </form>
-          </div>
+          <VoteControls postId={data.id} {...votes}
+            className="flex flex-col items-center gap-y-2 p-2" />
 
           <div className="p-2 w-full">
             <p className="text-xs text-muted-foreground">

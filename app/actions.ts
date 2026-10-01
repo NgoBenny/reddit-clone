@@ -13,13 +13,14 @@ import {
   validRichText,
 } from "./lib/validation";
 
-export async function updateUsername(prevState: any, formData: FormData) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
+async function requireUser() {
+  const user = await getKindeServerSession().getUser();
+  if (!user) redirect("/api/auth/login");
+  return user;
+}
 
-  if (!user) {
-    return redirect("/api/auth/login");
-  }
+export async function updateUsername(prevState: any, formData: FormData) {
+  const user = await requireUser();
 
   try {
     const username =
@@ -60,12 +61,7 @@ export async function updateUsername(prevState: any, formData: FormData) {
 }
 
 export async function createCommunity(prevState: any, formData: FormData) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user) {
-    return redirect("/api/auth/login");
-  }
+  const user = await requireUser();
 
   try {
     const name =
@@ -101,12 +97,7 @@ export async function createCommunity(prevState: any, formData: FormData) {
 }
 
 export async function updateSubDescription(prevState: any, formData: FormData) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user) {
-    return redirect("/api/auth/login");
-  }
+  const user = await requireUser();
 
   try {
     const subName = formText(formData, "subName", 21);
@@ -150,12 +141,7 @@ export async function createPost(
   { jsonContent }: { jsonContent: JSONContent | null },
   formData: FormData,
 ) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user) {
-    return redirect("/api/auth/login");
-  }
+  const user = await requireUser();
 
   const title = formText(formData, "title", 300);
   const imageUrl = formData.get("imageUrl") as string | null;
@@ -186,12 +172,7 @@ export async function createPost(
 }
 
 export async function handleVote(formData: FormData) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user) {
-    return redirect("/api/auth/login");
-  }
+  const user = await requireUser();
 
   const postId = formText(formData, "postId", 100);
   const voteDirection = formData.get("voteDirection");
@@ -228,12 +209,7 @@ export async function handleVote(formData: FormData) {
 }
 
 export async function createComment(formData: FormData) {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-
-  if (!user) {
-    return redirect("/api/auth/login");
-  }
+  const user = await requireUser();
 
   const comment = formText(formData, "comment", 5000);
   const postId = formText(formData, "postId", 100);

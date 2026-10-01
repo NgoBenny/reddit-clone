@@ -1,5 +1,6 @@
 const { loadEnvConfig } = require("@next/env");
 const { PrismaClient } = require("@prisma/client");
+const { tableCounts } = require("./database-state.cjs");
 loadEnvConfig(process.cwd());
 
 async function main() {
@@ -7,13 +8,7 @@ async function main() {
   const db = new PrismaClient();
   try {
     await db.$queryRaw`SELECT 1`;
-    await Promise.all([
-      db.user.count(),
-      db.subreddit.count(),
-      db.post.count(),
-      db.vote.count(),
-      db.comment.count(),
-    ]);
+    await tableCounts(db);
     console.log(
       "Database connection and all five application tables are available.",
     );

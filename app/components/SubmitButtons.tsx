@@ -1,102 +1,38 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import {
-  ArrowBigDown,
-  ArrowBigUp,
-  ArrowDown,
-  ArrowUp,
-  Loader2,
-} from "lucide-react";
+import { Button, type ButtonProps } from "@/components/ui/button";
+import { ArrowBigDown, ArrowBigUp, Loader2 } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/utils";
 
-export function SubmitButton({ text }: { text: string }) {
+export function SubmitButton({ text, className, size }: {
+  text: string;
+  className?: string;
+  size?: ButtonProps["size"];
+}) {
   const { pending } = useFormStatus();
   return (
-    <>
-      {pending ? (
-        <Button disabled>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Please wait
-        </Button>
-      ) : (
-        <Button type="submit">{text}</Button>
-      )}
-    </>
+    <Button type="submit" disabled={pending} className={className} size={size}>
+      {pending && <Loader2 className={cn("mr-2 animate-spin", size === "sm" ? "h-3 w-3" : "h-4 w-4")} />}
+      {pending ? "Please wait" : text}
+    </Button>
   );
 }
 
-export function SaveButton() {
+export function VoteButton({ direction, active = false }: {
+  direction: "UP" | "DOWN";
+  active?: boolean;
+}) {
   const { pending } = useFormStatus();
+  const Icon = direction === "UP" ? ArrowBigUp : ArrowBigDown;
   return (
-    <>
-      {pending ? (
-        <Button className="mt-2 w-full" disabled size="sm">
-          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-          Please wait
-        </Button>
-      ) : (
-        <Button size="sm" className="mt-2 w-full" type="submit">
-          Save
-        </Button>
+    <Button variant="ghost" size={pending ? "icon" : "sm"} type="submit"
+      disabled={pending} aria-label={direction === "UP" ? "upvote" : "downvote"}
+      aria-pressed={active}>
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+        <Icon className={cn("h-5 w-5 text-zinc-700 dark:text-white", active &&
+          (direction === "UP" ? "!text-red-500 fill-red-500" : "!text-blue-500 fill-blue-500"))} />
       )}
-    </>
-  );
-}
-
-export function UpVote({ active = false }: { active?: boolean }) {
-  const { pending } = useFormStatus();
-
-  return (
-    <>
-      {pending ? (
-        <Button variant="ghost" size="icon" disabled>
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </Button>
-      ) : (
-        <Button
-          variant="ghost"
-          size="sm"
-          type="submit"
-          aria-label="upvote"
-          aria-pressed={active}
-        >
-          <ArrowBigUp
-            className={cn("h-5 w-5 text-zinc-700 dark:text-white", {
-              "!text-red-500 fill-red-500": active,
-            })}
-          />
-        </Button>
-      )}
-    </>
-  );
-}
-
-export function DownVote({ active = false }: { active?: boolean }) {
-  const { pending } = useFormStatus();
-
-  return (
-    <>
-      {pending ? (
-        <Button variant="ghost" size="icon" disabled>
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </Button>
-      ) : (
-        <Button
-          variant="ghost"
-          size="sm"
-          type="submit"
-          aria-label="downvote"
-          aria-pressed={active}
-        >
-          <ArrowBigDown
-            className={cn("h-5 w-5 text-zinc-700 dark:text-white", {
-              "!text-blue-500 fill-blue-500": active,
-            })}
-          />
-        </Button>
-      )}
-    </>
+    </Button>
   );
 }

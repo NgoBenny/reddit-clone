@@ -8,8 +8,8 @@ import Link from "next/link";
 import { updateUsername } from "../actions";
 import { SubmitButton } from "./SubmitButtons";
 import { useFormState } from "react-dom";
-import { useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
+
+import { useActionToast } from "./useActionToast";
 
 const initialState = {
     message: "",
@@ -18,22 +18,7 @@ const initialState = {
 
 export function SettingsForm({username}: {username: string | null | undefined}) {
     const [state, formAction] = useFormState(updateUsername, initialState);
-    const { toast } = useToast();
-
-    useEffect(() => {
-        if(state?.status === 'green') {
-            toast({
-                title: 'Success',
-                description: state.message,
-            });
-        } else if(state?.status === 'error') {
-            toast({
-                title: 'Error',
-                description: state.message,
-                variant: 'destructive',
-            });
-        }
-    }, [state, toast]);
+    useActionToast(state);
     return (
         <form action={formAction}>
             <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
