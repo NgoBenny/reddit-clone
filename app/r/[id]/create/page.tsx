@@ -49,7 +49,10 @@ export default function CreatePostRoute() {
   const [title, setTitle] = useState<null | string>(null);
 
   async function createPostReddit(formData: FormData) {
-    try { await createPost({ jsonContent: json }, formData); }
+    try {
+      const result = await createPost({ jsonContent: json }, formData);
+      if (result?.error) toast({ title: "Couldn’t create post", description: result.error, variant: "destructive" });
+    }
     catch (error) {
       unstable_rethrow(error);
       toast({ title: "Couldn’t create post", description: "Check your title, content, and community, then try again.", variant: "destructive" });

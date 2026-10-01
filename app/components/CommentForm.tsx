@@ -20,7 +20,11 @@ export function CommentForm({ postId }: iAppProps) {
       className="mt-5"
       action={async (formData) => {
         try {
-          await createComment(formData);
+          const result = await createComment(formData);
+          if (result?.error) {
+            toast({ title: "Couldn’t add comment", description: result.error, variant: "destructive" });
+            return;
+          }
           ref.current?.reset();
         } catch (error) {
           unstable_rethrow(error);

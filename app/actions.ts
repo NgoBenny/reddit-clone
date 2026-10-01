@@ -6,6 +6,7 @@ import prisma from "./lib/db";
 import { Prisma } from "@prisma/client";
 import { JSONContent } from "@tiptap/react";
 import { revalidatePath } from "next/cache";
+import { createLimited, RateLimitError, rateLimitResult } from "./lib/rate-limit";
 import {
   formText,
   validImage,
@@ -75,15 +76,16 @@ export async function createCommunity(prevState: any, formData: FormData) {
         status: "error",
       };
 
-    const data = await prisma.subreddit.create({
+    const data = await createLimited(user.id, "subreddit", (tx) => tx.subreddit.create({
       data: {
         name: name,
         userId: user.id,
       },
-    });
+    }));
 
     return redirect(`/r/${data.name}`);
   } catch (e) {
+    if (e instanceof RateLimitError) return { message: e.message, status: "error" };
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       if (e.code === "P2002") {
         return {
@@ -156,7 +158,7 @@ export async function createPost(
   )
     throw new Error("Invalid or oversized post body");
 
-  const data = await prisma.post.create({
+  const data = await createLimited(user.id, "post", (tx) => tx.post.create({
     data: {
       title: title,
       imageString: imageUrl || undefined,
@@ -164,7 +166,9 @@ export async function createPost(
       userId: user.id,
       textContent: jsonContent ?? undefined,
     },
-  });
+  })).catch(rateLimitResult);
+
+  if ("error" in data) return data;
 
   revalidatePath("/");
   revalidatePath(`/r/${subName}`);
@@ -214,13 +218,14 @@ export async function createComment(formData: FormData) {
   const comment = formText(formData, "comment", 5000);
   const postId = formText(formData, "postId", 100);
 
-  await prisma.comment.create({
+  const result = await createLimited(user.id, "comment", (tx) => tx.comment.create({
     data: {
       text: comment,
       userId: user.id,
       postId: postId,
     },
-  });
+  })).catch(rateLimitResult);
+  if ("error" in result) return result;
 
   revalidatePath(`/post/${postId}`);
   revalidatePath("/", "layout");
