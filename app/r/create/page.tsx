@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/components/ui/use-toast";
 import Link from "next/link";
-import { useEffect } from "react";
 import { useFormState } from "react-dom";
+
+import { useActionToast } from "@/app/components/useActionToast";
 
 const initialState = {
   message: "",
@@ -18,16 +18,7 @@ const initialState = {
 
 export default function SubredditPage() {
   const [state, formAction] = useFormState(createCommunity, initialState);
-  const { toast } = useToast();
-  useEffect(() => {
-    if (state.status === "error") {
-      toast({
-        title: "Error",
-        description: state.message,
-        variant: "destructive",
-      });
-    }
-  }, [state, toast]);
+  useActionToast(state);
   return (
     <div className="max-w-[1000px] mx-auto flex flex-col mt-4">
       <form action={formAction}>

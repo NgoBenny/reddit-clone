@@ -3,6 +3,7 @@ const { PrismaClient } = require("@prisma/client");
 const { spawnSync } = require("node:child_process");
 const { readFileSync, writeFileSync } = require("node:fs");
 const { createHash } = require("node:crypto");
+const { tableCounts, requireRls } = require("./database-state.cjs");
 
 loadEnvConfig(process.cwd());
 
@@ -25,15 +26,13 @@ async function main() {
   };
   try {
     run(["migrate", "diff", "--from-schema-datasource", "prisma/schema.prisma", "--to-schema-datamodel", "prisma/schema.prisma", "--exit-code"]);
-    const security = await db.$queryRaw`SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('User', 'Subreddit', 'Post', 'Vote', 'Comment')`;
-    if (security.length !== 5 || security.some((table) => !table.rowsecurity)) throw new Error("All five existing application tables must have RLS enabled before baselining.");
-    const counts = () => Promise.all([db.user.count(), db.subreddit.count(), db.post.count(), db.vote.count(), db.comment.count()]);
-    const before = await counts();
+    await requireRls(db);
+    const before = await tableCounts(db);
     const history = await db.$queryRaw`SELECT to_regclass('public._prisma_migrations')::text AS name`;
     if (history[0].name) throw new Error("Migration history already exists; inspect it rather than baselining again.");
     run(["migrate", "resolve", "--applied", "0_init"]);
     run(["migrate", "status"]);
-    const after = await counts();
+    const after = await tableCounts(db);
     writeFileSync(file + ".baseline.json", JSON.stringify({ checkedAt: new Date().toISOString(), migration: "0_init", schemaMatched: true, rlsEnabled: true, countsBefore: before, countsAfter: after }, null, 2));
     console.log("Baseline recorded; existing tables were not recreated. Migration status is current.");
     if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error("Row counts changed during verification; check for concurrent writes.");

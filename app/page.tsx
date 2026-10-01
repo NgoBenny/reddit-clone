@@ -1,3 +1,4 @@
+import { getVoteSummary } from "@/app/lib/votes";
 import { Card } from "@/components/ui/card";
 import Image from "next/image";
 import Banner from "../public/banner.png";
@@ -117,13 +118,8 @@ async function ShowItems({ searchParams }: { searchParams: { page: string } }) {
           title={post.title}
           key={post.id}
           commentAmount={post.Comment.length}
-          currentVote={post.Vote.find((vote) => vote.userId === user?.id)?.voteType}
+          {...getVoteSummary(post.Vote, user?.id)}
           userName={post.User?.userName as string}
-          voteCount={post.Vote.reduce((acc, vote) => {
-            if (vote.voteType === "UP") return acc + 1;
-            if (vote.voteType === "DOWN") return acc - 1;
-            return acc;
-          }, 0)}
         />
       ))}
 

@@ -22,6 +22,7 @@ async function check({ drift = false, rls = true, existing = false, age = 0 } = 
     "node:child_process": { spawnSync(_executable, args) { commands.push(args); return { status: drift ? 2 : 0 }; } },
     "node:fs": { readFileSync(file) { return file.endsWith(".json") ? JSON.stringify(receipt) : data; }, writeFileSync() {} },
     "node:crypto": require("node:crypto"),
+    "./database-state.cjs": require("../scripts/database-state.cjs"),
   })[name];
   mockRequire.resolve = () => "prisma-cli";
   const mod = { exports: {} };

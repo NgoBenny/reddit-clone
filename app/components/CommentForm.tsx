@@ -6,6 +6,7 @@ import { SubmitButton } from "./SubmitButtons";
 import { createComment } from "../actions";
 import { useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { unstable_rethrow } from "next/navigation";
 
 interface iAppProps {
   postId: string;
@@ -21,7 +22,8 @@ export function CommentForm({ postId }: iAppProps) {
         try {
           await createComment(formData);
           ref.current?.reset();
-        } catch {
+        } catch (error) {
+          unstable_rethrow(error);
           toast({ title: "Couldn’t add comment", description: "Your draft is saved here. Please try again.", variant: "destructive" });
         }
       }}

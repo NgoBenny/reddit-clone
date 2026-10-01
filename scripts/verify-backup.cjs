@@ -4,6 +4,7 @@ const { spawnSync } = require("node:child_process");
 const { readFileSync, writeFileSync, mkdtempSync, rmSync } = require("node:fs");
 const { resolve, join } = require("node:path");
 const { createHash } = require("node:crypto");
+const { tableCounts, requireRls } = require("./database-state.cjs");
 loadEnvConfig(process.cwd());
 
 async function main() {
@@ -30,12 +31,10 @@ async function main() {
     // initdb creates public; the archive restores its own schema into this empty local database.
     run("psql", [...connection, "-v", "ON_ERROR_STOP=1", "-c", "DROP SCHEMA public"]);
     run("pg_restore", [...connection, "--no-owner", "--no-acl", "--exit-on-error", "--single-transaction", file]);
-    const counts = (db) => Promise.all([db.user.count(), db.subreddit.count(), db.post.count(), db.vote.count(), db.comment.count()]);
-    const restoredCounts = await counts(local);
-    const liveCounts = await counts(live);
+    const restoredCounts = await tableCounts(local);
+    const liveCounts = await tableCounts(live);
     if (JSON.stringify(restoredCounts) !== JSON.stringify(liveCounts)) throw new Error("Restored counts differ from live counts; check for concurrent writes.");
-    const security = await local.$queryRaw`SELECT rowsecurity FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('User', 'Subreddit', 'Post', 'Vote', 'Comment')`;
-    if (security.length !== 5 || security.some((table) => !table.rowsecurity)) throw new Error("Restored RLS settings differ.");
+    await requireRls(local);
     // Compare an actual execution of the baseline with the restored backup.
     run("psql", [...connection, "-v", "ON_ERROR_STOP=1", "-c", "CREATE DATABASE baseline_check"]);
     run("psql", [...connection.slice(0, -1), "baseline_check", "-v", "ON_ERROR_STOP=1", "--single-transaction", "-f", "prisma/migrations/0_init/migration.sql"]);

@@ -1,14 +1,12 @@
-import { updateSubDescription } from "@/app/actions";
+import { getVoteSummary } from "@/app/lib/votes";
 import { CreatePostCard } from "@/app/components/CreatePostCard";
 import Pagination from "@/app/components/Pagination";
 import { PostCard } from "@/app/components/PostCard";
 import { SubDescriptionForm } from "@/app/components/SubDescritpionForm";
-import { SaveButton, SubmitButton } from "@/app/components/SubmitButtons";
 import prisma from "@/app/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { Cake, FileQuestion } from "lucide-react";
 import Image from "next/image";
@@ -105,15 +103,10 @@ export default async function SubRedditRoute({
                 imageString={post.imageString}
                 subName={data.name}
                 commentAmount={post.Comment.length}
-                currentVote={post.Vote.find((vote) => vote.userId === user?.id)?.voteType}
+                {...getVoteSummary(post.Vote, user?.id)}
                 title={post.title}
                 userName={post.User?.userName as string}
                 jsonContent={post.textContent}
-                voteCount={post.Vote.reduce((acc, vote) => {
-                  if (vote.voteType === "UP") return acc + 1;
-                  if (vote.voteType === "DOWN") return acc - 1;
-                  return acc;
-                }, 0)}
               />
             ))}
 

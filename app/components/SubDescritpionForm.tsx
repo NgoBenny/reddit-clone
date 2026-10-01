@@ -1,16 +1,16 @@
 "use client";
 
 import { Textarea } from "@/components/ui/textarea";
-import { SaveButton } from "./SubmitButtons";
+import { SubmitButton } from "./SubmitButtons";
 import { updateSubDescription } from "../actions";
 import { useFormState } from "react-dom";
-import { useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
 
 interface iAppProps {
     subName: string;
     description: string | null | undefined;
 }
+
+import { useActionToast } from "./useActionToast";
 
 const initialState = {
     message: "",
@@ -19,22 +19,7 @@ const initialState = {
 
 export function SubDescriptionForm({description, subName}: iAppProps) {
     const [state, formAction] = useFormState(updateSubDescription, initialState);
-    const {toast} = useToast()
-
-    useEffect(() => {
-        if(state.status === "green") {
-            toast ({
-                title: "Success",
-                description: state.message,
-            });
-        } else if (state.status === "error") {
-            toast ({
-                title: "Error",
-                description: state.message,
-                variant: "destructive",
-            });
-        }
-    }, [state, toast]);
+    useActionToast(state);
     return (
         <form className="mt-3" action={formAction}>
             <input type="hidden" name="subName" value={subName} />
@@ -45,7 +30,7 @@ export function SubDescriptionForm({description, subName}: iAppProps) {
                 name="description"
                 defaultValue={description ?? undefined}
             />
-            <SaveButton />
+            <SubmitButton text="Save" size="sm" className="mt-2 w-full" />
     </form>
     )
 }

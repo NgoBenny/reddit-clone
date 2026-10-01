@@ -31,6 +31,65 @@ const form = (values) => {
 };
 
 async function main() {
+  const React = require("react");
+  const { renderToStaticMarkup } = require("react-dom/server");
+  const { getVoteSummary } = load("app/lib/votes.ts");
+  const sampleVotes = [{ userId: "owner", voteType: "UP" }, { userId: "other", voteType: "DOWN" }];
+  assert.equal(getVoteSummary(sampleVotes, "owner").voteCount, 0);
+  assert.equal(getVoteSummary(sampleVotes, "owner").currentVote, "UP");
+  assert.equal(getVoteSummary(sampleVotes).currentVote, undefined);
+  assert.equal(getVoteSummary([]).voteCount, 0);
+  let pending = false;
+  const buttons = load("app/components/SubmitButtons.tsx", {
+    "@/components/ui/button": { Button: (props) => React.createElement("button", props) },
+    "@/lib/utils": { cn: (...values) => values.filter(Boolean).join(" ") },
+    "react-dom": { useFormStatus: () => ({ pending }) },
+  });
+  for (const direction of ["UP", "DOWN"]) {
+    const html = renderToStaticMarkup(React.createElement(buttons.VoteButton, { direction, active: true }));
+    assert.match(html, new RegExp(`aria-label="${direction.toLowerCase()}vote"`));
+    assert.match(html, /aria-pressed="true"/);
+    assert.match(html, direction === "UP" ? /fill-red-500/ : /fill-blue-500/);
+  }
+  pending = true;
+  assert.match(renderToStaticMarkup(React.createElement(buttons.VoteButton, { direction: "UP" })), /disabled/);
+  assert.match(renderToStaticMarkup(React.createElement(buttons.SubmitButton, { text: "Save" })), /Please wait/);
+  const { VoteControls } = load("app/components/VoteControls.tsx", {
+    "../actions": { handleVote: "/vote" }, "./SubmitButtons": buttons,
+  });
+  const controls = renderToStaticMarkup(React.createElement(VoteControls, { postId: "post-123", voteCount: 5, currentVote: "UP", className: "votes" }));
+  assert.equal((controls.match(/name="postId" value="post-123"/g) || []).length, 2);
+  assert.match(controls, /name="voteDirection" value="UP"/);
+  assert.match(controls, /name="voteDirection" value="DOWN"/);
+  assert.match(controls, /<\/form>5<form/);
+  const notifications = [];
+  const { useActionToast } = load("app/components/useActionToast.ts", {
+    react: { useEffect: (effect) => effect() },
+    "@/components/ui/use-toast": { useToast: () => ({ toast: (notice) => notifications.push(notice) }) },
+  });
+  for (const status of ["", "green", "error"]) useActionToast({ status, message: "test" });
+  assert.equal(notifications.length, 2);
+  assert.equal(notifications[0].title, "Success");
+  assert.equal(notifications[1].variant, "destructive");
+  let commentError;
+  let commentResets = 0;
+  const { CommentForm } = load("app/components/CommentForm.tsx", {
+    react: { ...React, useRef: () => ({ current: { reset: () => commentResets++ } }) },
+    "@/components/ui/label": { Label: "label" }, "@/components/ui/textarea": { Textarea: "textarea" },
+    "./SubmitButtons": buttons,
+    "../actions": { createComment: async () => { if (commentError) throw commentError; } },
+    "@/components/ui/use-toast": { useToast: () => ({ toast: (notice) => notifications.push(notice) }) },
+  });
+  const commentAction = CommentForm({ postId: "post" }).props.action;
+  await commentAction(new FormData());
+  assert.equal(commentResets, 1);
+  commentError = (() => { try { require("next/navigation").redirect("/api/auth/login"); } catch (error) { return error; } })();
+  await assert.rejects(() => commentAction(new FormData()), (error) => error === commentError);
+  assert.equal(notifications.length, 2);
+  commentError = new Error("Database unavailable");
+  await commentAction(new FormData());
+  assert.equal(notifications.length, 3);
+  assert.equal(commentResets, 1, "Failed comments must preserve the draft");
   // Exercise the actual composer handler: redirects must not show failure toasts.
   const source = ts.createSourceFile("composer.tsx", fs.readFileSync("app/r/[id]/create/page.tsx", "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let handler;
@@ -257,7 +316,16 @@ async function main() {
     /Invalid or oversized/,
   );
   user = null;
-  await assert.rejects(() => vote("UP"), /REDIRECT:\/api\/auth\/login/);
+  const beforeUnauthenticated = writes;
+  for (const attempt of [
+    () => vote("UP"),
+    () => actions.updateUsername({}, form({})),
+    () => actions.createCommunity({}, form({})),
+    () => actions.updateSubDescription({}, form({})),
+    () => actions.createPost({ jsonContent: null }, form({})),
+    () => actions.createComment(form({})),
+  ]) await assert.rejects(attempt, /REDIRECT:\/api\/auth\/login/);
+  assert.equal(writes, beforeUnauthenticated);
   console.log(
     "Regression checks passed: validation, safe rich text, ownership, vote toggle/repair/retry, and authentication.",
   );
