@@ -37,4 +37,5 @@ jobs:
       - run: npm test
       - run: npx prisma migrate deploy
       - run: npm run test:features
+      - run: npm run test:runtime-role
       - run: npm audit --audit-level=high
