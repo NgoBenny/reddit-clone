@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 2,
+  "title": "Design System: Common",
+  "extensions": {
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ],
+    "motion": [
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Respect reduced motion for decorative animations and transitions."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Navigation item",
+      "kind": "nav",
+      "description": "Active navigation uses a restrained teal surface and visible current state.",
+      "html": "<a class=\"ds-nav\" aria-current=\"page\" href=\"#\">Your feed</a>",
+      "css": ".ds-nav {display:flex;align-items:center;min-height:44px;padding:0 12px;border-radius:12px;font:500 14px/20px Inter,sans-serif;color:hsl(var(--muted-foreground));text-decoration:none;} .ds-nav:hover {background:hsl(var(--muted));color:hsl(var(--foreground));} .ds-nav[aria-current=page] {color:hsl(var(--primary));background:hsl(var(--primary) / .1);} .ds-nav:focus-visible {outline:2px solid hsl(var(--ring));outline-offset:3px;}"
+    },
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Shared primary button; submit controls increase the minimum height to 44px.",
+      "html": "<button class=\"ds-primary\">Create post</button>",
+      "css": ".ds-primary {height:40px;padding:8px 16px;border:0;border-radius:14px;font:500 14px/20px Inter,sans-serif;background:hsl(var(--primary));color:hsl(var(--primary-foreground));transition:background-color .15s;} .ds-primary:hover {background:hsl(var(--primary) / .9);} .ds-primary:focus-visible {outline:2px solid hsl(var(--ring));outline-offset:2px;} .ds-primary:disabled {pointer-events:none;opacity:.5;}"
+    },
+    {
+      "name": "Outline button",
+      "kind": "button",
+      "description": "Secondary actions such as creating or leaving a community.",
+      "html": "<button class=\"ds-outline\">Create community</button>",
+      "css": ".ds-outline {height:40px;padding:8px 16px;border:1px solid hsl(var(--input));border-radius:14px;font:500 14px/20px Inter,sans-serif;background:hsl(var(--background));color:hsl(var(--foreground));transition:background-color .15s;} .ds-outline:hover {background:hsl(var(--accent));color:hsl(var(--accent-foreground));} .ds-outline:focus-visible {outline:2px solid hsl(var(--ring));outline-offset:2px;} .ds-outline:disabled {pointer-events:none;opacity:.5;}"
+    },
+    {
+      "name": "Text field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Shared field; the composer title increases its height to 44px.",
+      "html": "<label for=\"ds-title\">Title</label><input class=\"ds-field\" id=\"ds-title\" placeholder=\"What would you like to discuss?\" />",
+      "css": ".ds-field {display:block;width:100%;height:40px;padding:8px 12px;border:1px solid hsl(var(--input));border-radius:14px;font:400 14px/20px Inter,sans-serif;background:hsl(var(--background));color:hsl(var(--foreground));} .ds-field::placeholder {color:hsl(var(--muted-foreground));opacity:1;} .ds-field:focus-visible {outline:2px solid hsl(var(--ring));outline-offset:2px;} .ds-field:disabled {cursor:not-allowed;opacity:.5;}"
+    },
+    {
+      "name": "Feed card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat bordered conversation surface with responsive padding.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-meta\">Community · author</p><a class=\"ds-title\" href=\"#\">A conversation title</a><p class=\"ds-preview\">A readable preview of the discussion.</p></article>",
+      "css": ".ds-card {padding:16px;border:1px solid hsl(var(--border));border-radius:16px;background:hsl(var(--card));color:hsl(var(--card-foreground));} .ds-meta {font:400 12px/16px Inter,sans-serif;color:hsl(var(--muted-foreground));} .ds-title {font:600 18px/1.375 Inter,sans-serif;color:inherit;letter-spacing:-.025em;text-decoration:none;} .ds-title:hover {color:hsl(var(--primary));} .ds-title:focus-visible {outline:2px solid hsl(var(--ring));outline-offset:3px;} .ds-preview {font:400 14px/1.625 Inter,sans-serif;color:hsl(var(--muted-foreground));} @media(min-width:640px) {.ds-card {padding:20px;} .ds-title {font-size:20px;}}"
+    },
+    {
+      "name": "Flair label",
+      "kind": "chip",
+      "description": "A noninteractive content label using a faint teal surface.",
+      "html": "<span class=\"ds-flair\">Discussion</span>",
+      "css": ".ds-flair {display:inline-block;padding:4px 8px;border-radius:14px;background:hsl(var(--primary) / .1);color:hsl(var(--primary));font:500 12px/16px Inter,sans-serif;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Conversations first",
+    "overview": "A calm, approachable community app where conversations lead. Common is a working name. Preserve existing features and URLs while giving the application its own identity. Linear, Notion and Airbnb analyses in VoltAgent/awesome-design-md informed hierarchy, typography and discovery; no proprietary fonts or brand assets are copied.",
+    "keyCharacteristics": [
+      "Warm neutrals",
+      "Restrained teal",
+      "Layered dark surfaces",
+      "Mobile conversation focus"
+    ],
+    "dos": [
+      "Do use real communities and counts.",
+      "Do keep moderation and ownership controls attached to existing server actions.",
+      "Do keep real user content readable."
+    ],
+    "donts": [
+      "Don't add fabricated activity or popularity.",
+      "Don't copy Reddit logos or mascots.",
+      "Don't add decorative banners, gradients or a second UI library."
+    ]
+  }
+}

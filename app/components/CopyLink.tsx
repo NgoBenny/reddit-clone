@@ -14,7 +14,7 @@ export function CopyLink({ id }: { id: string }) {
     }
   }
   return (
-    <button type="button" className="flex items-center gap-x-1" onClick={copytoClipboard}>
+    <button type="button" className="flex min-h-11 items-center gap-x-1.5 rounded-xl px-2 hover:bg-muted" onClick={copytoClipboard}>
       <Share className="h-4 w-4 text-muted-foreground" />
       <p className="text-muted-foreground font-medium text-xs sm:text-sm">
         Share

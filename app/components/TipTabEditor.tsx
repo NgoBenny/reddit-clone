@@ -14,7 +14,7 @@ export const Menubar = ({ editor }: { editor: Editor | null }) => {
   }
 
   return (
-    <div className="flex flex-wrap gap-5 mt-5">
+    <div role="toolbar" aria-label="Text formatting" className="flex flex-wrap gap-1 mt-2">
       <Button
         type="button"
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -96,7 +96,7 @@ export function TipTabEditor({
       <Menubar editor={editor} />
       <EditorContent
         editor={editor}
-        className="rounded-lg border p-2 min-h-[150px] mt-2"
+        className="rounded-xl border bg-background p-4 min-h-[180px] mt-2 focus-within:ring-2 focus-within:ring-ring"
       />
     </div>
   );

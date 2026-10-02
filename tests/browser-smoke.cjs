@@ -11,13 +11,13 @@ async function main() {
   });
   try {
     const page = await browser.newPage();
-    await page.goto(base);
+    await page.goto(base + "/r/browser-test");
     await page
       .getByRole("combobox", { name: "Sort", exact: true })
       .selectOption("top");
     await page.getByRole("button", { name: "Apply filters" }).click();
     await page.waitForURL(/sort=top/);
-    const titles = page.locator("main a > h1");
+    const titles = page.locator("main a > h2");
     assert.equal(await titles.first().innerText(), "Older top");
     await page
       .getByRole("combobox", { name: "Time", exact: true })
@@ -32,10 +32,10 @@ async function main() {
       .getByRole("combobox", { name: "Time", exact: true })
       .selectOption("all");
     await page
-      .getByRole("textbox", { name: "Search posts", exact: true })
-      .fill("SearchableBody");
+      .getByRole("searchbox", { name: "Search posts", exact: true })
+      .fill("Older top");
     await page.getByRole("button", { name: "Apply filters" }).click();
-    await page.waitForURL(/q=SearchableBody/);
+    await page.waitForURL(/q=Older/);
     assert.equal(await titles.count(), 1);
     assert.equal(await titles.first().innerText(), "Older top");
     await page

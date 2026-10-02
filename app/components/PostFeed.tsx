@@ -3,73 +3,8 @@ import { getVoteSummary } from "../lib/votes";
 import { PostCard } from "./PostCard";
 import Pagination from "./Pagination";
 import Link from "next/link";
-
-export function FeedFilters({
-  query,
-  home = false,
-}: {
-  query: FeedQuery;
-  home?: boolean;
-}) {
-  return (
-    <form className="flex flex-wrap gap-2 rounded-md border p-3">
-      <label className="flex-1 min-w-40 text-sm">
-        Search posts
-        <input
-          name="q"
-          defaultValue={typeof query.q === "string" ? query.q : ""}
-          maxLength={100}
-          placeholder="Search titles and text"
-          className="block w-full border rounded bg-background p-2 mt-1"
-        />
-      </label>
-      {home && (
-        <label className="text-sm">
-          Feed
-          <select
-            name="feed"
-            defaultValue={query.feed === "home" ? "home" : "all"}
-            className="block border rounded bg-background p-2 mt-1"
-          >
-            <option value="all">All communities</option>
-            <option value="home">Joined communities</option>
-          </select>
-        </label>
-      )}
-      <label className="text-sm">
-        Sort
-        <select
-          name="sort"
-          defaultValue={query.sort === "top" ? "top" : "new"}
-          className="block border rounded bg-background p-2 mt-1"
-        >
-          <option value="new">New</option>
-          <option value="top">Top</option>
-        </select>
-      </label>
-      <label className="text-sm">
-        Time
-        <select
-          name="time"
-          defaultValue={
-            ["day", "week"].includes(query.time || "") ? query.time : "all"
-          }
-          className="block border rounded bg-background p-2 mt-1"
-        >
-          <option value="all">All time</option>
-          <option value="day">Past 24 hours</option>
-          <option value="week">Past week</option>
-        </select>
-      </label>
-      <button
-        className="self-end rounded bg-primary px-3 py-2 text-primary-foreground"
-        type="submit"
-      >
-        Apply filters
-      </button>
-    </form>
-  );
-}
+import { Bookmark, MessagesSquare } from "lucide-react";
+export { FeedFilters } from "./FeedFilters";
 
 export async function PostFeed({
   query,
@@ -82,16 +17,69 @@ export async function PostFeed({
   userId?: string;
 }) {
   const { posts, count } = await getFeed(query, scope);
+  const filtered = !!query.q || query.time === "day" || query.time === "week";
+  const empty = filtered
+    ? {
+        title: "No conversations match",
+        body: "Try another search or clear your filters.",
+        href: scope.subName
+          ? `/r/${scope.subName}`
+          : scope.savedBy
+            ? "/saved"
+            : scope.authorId
+              ? undefined
+              : "/",
+        cta: "Clear filters",
+      }
+    : scope.savedBy
+      ? {
+          title: "Keep a conversation for later",
+          body: "Choose Save on any post. Your saved collection is private to you.",
+          href: "/",
+          cta: "Explore conversations",
+        }
+      : query.feed === "home"
+        ? {
+            title: "Your feed starts with your communities",
+            body: "Join a community to see its posts here. If you’ve already joined, start a conversation there.",
+            href: "/communities",
+            cta: "Find a community",
+          }
+        : scope.subName
+          ? {
+              title: "Start the first conversation",
+              body: "Share a question, idea or image with this community.",
+              href: `/r/${scope.subName}/create`,
+              cta: "Create post",
+            }
+          : {
+              title: "No posts here yet",
+              body: "Explore communities to find a conversation.",
+              href: "/communities",
+              cta: "Browse communities",
+            };
   return (
     <>
       {!posts.length && (
-        <p className="rounded border p-6 text-muted-foreground">
-          No posts match.{" "}
-          <Link href="/communities" className="text-primary underline">
-            Explore communities
-          </Link>{" "}
-          or change your filters.
-        </p>
+        <div className="rounded-2xl border bg-card px-6 py-12 text-center">
+          {scope.savedBy ? (
+            <Bookmark className="mx-auto mb-4 h-8 w-8 text-primary" />
+          ) : (
+            <MessagesSquare className="mx-auto mb-4 h-8 w-8 text-primary" />
+          )}
+          <h2 className="text-xl font-semibold">{empty.title}</h2>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+            {empty.body}
+          </p>
+          {empty.href && (
+            <Link
+              href={empty.href}
+              className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+            >
+              {empty.cta}
+            </Link>
+          )}
+        </div>
       )}
       {posts.map((post) => (
         <PostCard
@@ -99,9 +87,11 @@ export async function PostFeed({
           id={post.id}
           title={post.title}
           jsonContent={post.textContent}
+          bodyText={post.bodyText}
           imageString={post.imageString}
           subName={post.subName || ""}
           userName={post.User?.userName || "deleted"}
+          createdAt={post.createdAt}
           flair={post.flair}
           commentAmount={post._count.Comment}
           saved={post.savedBy.length > 0}

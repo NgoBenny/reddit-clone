@@ -8,7 +8,10 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Reddit Clone",
+  title: {
+    default: "Common · Community conversations",
+    template: "%s · Common",
+  },
   description: "Explore communities, share posts, and join the discussion.",
 };
 
@@ -20,18 +23,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-      <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <Navbar />
-          {children}
+          <div id="main-content" tabIndex={-1} className="app-content">
+            {children}
+          </div>
 
           <Toaster />
         </ThemeProvider>
-        </body>
+      </body>
     </html>
   );
 }

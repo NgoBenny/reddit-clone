@@ -7,52 +7,51 @@ import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { updateUsername } from "../actions";
 import { SubmitButton } from "./SubmitButtons";
-import { useFormState } from "react-dom";
+import { ActionForm } from "./ActionForm";
 import { useState } from "react";
 
-import { useActionToast } from "./useActionToast";
-
 const initialState = {
-    message: "",
-    status: "",
+  message: "",
+  status: "",
 };
 
-export function SettingsForm({username}: {username: string | null | undefined}) {
-    const [state, formAction] = useFormState(updateUsername, initialState);
-    const [draft, setDraft] = useState(username ?? "");
-    useActionToast(state);
-    return (
-        <form action={formAction}>
-            <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
+export function SettingsForm({
+  username,
+}: {
+  username: string | null | undefined;
+}) {
+  const [draft, setDraft] = useState(username ?? "");
+  return (
+    <ActionForm
+      action={updateUsername.bind(null, initialState)}
+      className="rounded-2xl border bg-card p-5 sm:p-8"
+    >
+      <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
 
-            <Separator className="ny-4" />
-            <Label htmlFor="username" className="text-lg">Username</Label>
-            <p className="text-muted-foreground">
-                Change your username here
-            </p>
+      <Separator className="my-4" />
+      <Label htmlFor="username" className="text-lg">
+        Username
+      </Label>
+      <p className="text-muted-foreground">Change your username here</p>
 
-            <Input 
-                id="username"
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                name="username"
-                required 
-                className="mt-2" 
-                minLength={2}
-                pattern="[a-zA-Z0-9_\-]{2,21}"
-                maxLength={21} 
-            />
+      <Input
+        id="username"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        name="username"
+        required
+        className="mt-2"
+        minLength={2}
+        pattern="[a-zA-Z0-9_\-]{2,21}"
+        maxLength={21}
+      />
 
-            {state?.status === 'error' && (
-            <p className="text-destructive mt-1">{state.message}</p>
-            )}
-
-            <div className="w-full flex mt-5 gap-x-5 justify-end">
-               <Button variant="secondary" asChild type="button">
-                    <Link href="/">Cancel</Link>
-                </Button>
-               <SubmitButton text="Change Username"/>  
-            </div>
-        </form>
-    )
+      <div className="w-full flex mt-5 gap-x-5 justify-end">
+        <Button variant="secondary" asChild type="button">
+          <Link href="/">Cancel</Link>
+        </Button>
+        <SubmitButton text="Change Username" />
+      </div>
+    </ActionForm>
+  );
 }

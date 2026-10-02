@@ -11,7 +11,9 @@ import { Card } from "@/components/ui/card";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronDown, Plus, ShieldCheck } from "lucide-react";
 export const dynamic = "force-dynamic";
+
 export default async function Community({
   params,
   searchParams,
@@ -41,72 +43,114 @@ export default async function Community({
   });
   if (!community) notFound();
   const moderator = user?.id === community.userId;
+  const joined = community.memberships.length > 0;
   return (
-    <main className="max-w-[1000px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
-      <div className="w-full md:w-[65%] min-w-0 flex flex-col gap-y-5">
-        <h1 className="text-xl font-semibold">r/{community.name}</h1>
-        <CreatePostCard subName={community.name} />
-        <FeedFilters query={query} />
-        <PostFeed query={query} subName={community.name} userId={user?.id} />
-      </div>
-      <aside className="w-full md:w-[35%]">
-        <Card className="p-4 space-y-4">
-          <h2 className="font-semibold">About Community</h2>
-          {moderator ? (
-            <SubDescriptionForm
-              description={community.description}
-              subName={id}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {community.description}
+    <main className="page-grid">
+      <Card className="p-5 shadow-none xl:col-span-2 sm:p-6">
+        <div className="flex flex-wrap items-start gap-4">
+          <span
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-xl font-semibold text-primary"
+            aria-hidden="true"
+          >
+            {community.name.slice(0, 2).toUpperCase()}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="break-words text-2xl font-semibold sm:text-3xl">
+              {community.name}
+            </h1>
+            <p className="mt-2 max-w-2xl break-words text-sm text-muted-foreground">
+              {community.description ||
+                "A place to share ideas and start conversations."}
             </p>
-          )}
-          <p className="text-sm text-muted-foreground">
-            {community._count.memberships} members · Created{" "}
-            {community.createdAt.toLocaleDateString("en-US")}
-          </p>
-          <ActionForm action={setMembership}>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {community._count.memberships} members · Created{" "}
+              {community.createdAt.toLocaleDateString("en-US", {
+                timeZone: "UTC",
+              })}
+            </p>
+          </div>
+          <ActionForm
+            action={setMembership}
+            className="w-full sm:w-auto"
+            success={
+              joined ? "You left the community" : "You joined the community"
+            }
+          >
             <input type="hidden" name="subredditId" value={community.id} />
-            <input
-              type="hidden"
-              name="join"
-              value={String(!community.memberships.length)}
-            />
+            <input type="hidden" name="join" value={String(!joined)} />
             <SubmitButton
-              text={
-                community.memberships.length
-                  ? "Leave community"
-                  : "Join community"
-              }
+              text={joined ? "Leave community" : "Join community"}
+              variant={joined ? "outline" : "default"}
+              pressed={joined}
             />
           </ActionForm>
-          <Link
-            href={`/r/${id}/create`}
-            className="block text-primary underline"
-          >
-            Create post
-          </Link>
-          <h2 className="font-semibold">Community rules</h2>
-          <p className="text-sm whitespace-pre-wrap break-words">
+        </div>
+        <details className="mt-4 border-t pt-2">
+          <summary className="flex min-h-11 items-center gap-2 text-sm font-medium">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            Community rules & flair
+            <ChevronDown className="ml-auto h-4 w-4" />
+          </summary>
+          <p className="max-w-prose whitespace-pre-wrap break-words py-3 text-sm">
             {community.rules || "No rules added yet. Be respectful."}
           </p>
+          <div className="flex flex-wrap gap-2">
+            {community.flairs.map((flair) => (
+              <span
+                key={flair}
+                className="rounded-md bg-primary/10 px-2 py-1 text-xs text-primary"
+              >
+                {flair}
+              </span>
+            ))}
+          </div>
           {moderator && (
-            <>
+            <div className="mt-5 space-y-4 border-t pt-4">
+              <h2 className="font-semibold">Manage community</h2>
+              <SubDescriptionForm
+                description={community.description}
+                subName={id}
+              />
+              <CommunityRulesForm
+                name={id}
+                rules={community.rules}
+                flairs={community.flairs}
+              />
               <Link
                 href={`/r/${id}/moderation`}
-                className="block text-primary underline"
+                className="inline-flex min-h-11 items-center text-primary underline"
               >
                 Review reports
               </Link>
-              <details>
-                <summary className="cursor-pointer text-sm font-medium">
-                  Edit rules and flair
-                </summary>
-                <CommunityRulesForm name={id} rules={community.rules} flairs={community.flairs} />
-              </details>
-            </>
+            </div>
           )}
+        </details>
+      </Card>
+      <div className="min-w-0 space-y-5">
+        <CreatePostCard subName={community.name} />
+        <FeedFilters key={JSON.stringify(query)} query={query} />
+        <PostFeed query={query} subName={community.name} userId={user?.id} />
+      </div>
+      <aside className="hidden xl:block">
+        <Card className="sticky top-24 space-y-4 p-5 shadow-none">
+          <h2 className="font-semibold">Make yourself at home</h2>
+          <p className="text-sm text-muted-foreground">
+            Have a question or something to share? Start a conversation in{" "}
+            {community.name}.
+          </p>
+          <Link
+            href={`/r/${id}/create`}
+            className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-medium text-primary-foreground"
+          >
+            <Plus className="h-4 w-4" />
+            Create post
+          </Link>
+          <h3 className="border-t pt-4 text-sm font-semibold">
+            Community rules
+          </h3>
+          <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+            {community.rules || "Be respectful."}
+          </p>
         </Card>
       </aside>
     </main>
