@@ -108,7 +108,9 @@ export async function Navbar() {
                   <RegisterLink>Sign up</RegisterLink>
                 </Button>
                 <Button asChild>
-                  <LoginLink>Login</LoginLink>
+                  <LoginLink authUrlParams={{ prompt: "login" }}>
+                    Login
+                  </LoginLink>
                 </Button>
               </>
             )}

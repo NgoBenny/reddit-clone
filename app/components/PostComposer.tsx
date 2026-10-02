@@ -43,7 +43,7 @@ export default function PostComposer({
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  async function createPostReddit(formData: FormData) {
+  async function submitPost(formData: FormData) {
     setError("");
     try {
       const result = await (post
@@ -106,7 +106,7 @@ export default function PostComposer({
               </Link>
             )}
           </div>
-          <form action={createPostReddit} className="space-y-5">
+          <form action={submitPost} className="space-y-5">
             <input type="hidden" name="imageUrl" value={imageUrl ?? ""} />
             <input type="hidden" name="subName" value={subName} />
             {post && <input type="hidden" name="postId" value={post.id} />}

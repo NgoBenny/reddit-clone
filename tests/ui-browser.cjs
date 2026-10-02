@@ -49,6 +49,12 @@ async function main() {
   }
   try {
     await page.goto(base);
+    assert.equal(
+      await page.getByRole("link", { name: "Login", exact: true }).getAttribute("href"),
+      "/api/auth/login?prompt=login",
+      "Explicit login shows authentication choices instead of reusing SSO",
+    );
+    checks++;
     await page
       .getByRole("heading", {
         name: "Discover a different perspective",

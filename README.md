@@ -1,8 +1,10 @@
-# Reddit Clone
+# Common
 
 A full-stack community discussion app built with Next.js 15, TypeScript, and PostgreSQL. Users can sign in through Kinde, create communities, publish rich-text or image posts, comment, and toggle upvotes or downvotes. Prisma-backed server actions persist these interactions, while paginated feeds and Tailwind CSS components provide the browsing interface.
 
 The project brings authentication, relational data modeling, image uploads through UploadThing, and server-rendered pages together in one application.
+
+Login explicitly opens Kinde's sign-in choices rather than silently reusing its SSO session. Signed-in users can select **Switch account** from the account menu. Existing sessions still persist during normal browsing.
 
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
@@ -38,6 +40,10 @@ To learn more about Next.js, take a look at the following resources:
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
 ## Deploy on Vercel
+
+The GitHub repository is `NgoBenny/common` and the Vercel project is `common`. The staged address [common-ngobenny.vercel.app](https://common-ngobenny.vercel.app) temporarily redirects to the existing production address until the Common release.
+
+For the production address cutover, add `https://common-ngobenny.vercel.app/api/auth/kinde_callback` to Kinde's allowed callbacks and `https://common-ngobenny.vercel.app` to its logout allowlist. Set production `KINDE_SITE_URL` and `KINDE_POST_LOGOUT_REDIRECT_URL` to the new origin, and `KINDE_POST_LOGIN_REDIRECT_URL` to its `/api/auth/creation` URL. Deploy the release, connect the Common domain to Production, and redirect the old domain to Common. Verify login, logout and account switching on the new origin before removing any old callback entries. Preview deployments need their own exact allowed origins and matching environment variables.
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 

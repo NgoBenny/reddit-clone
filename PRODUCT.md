@@ -13,7 +13,7 @@ Explore and joined-community feeds, search, sorting and flair filters, paginatio
 Preserve URLs, data, authentication, authorization, moderation, rate limits, validation and draft retention. Existing Next.js, React, Tailwind, Radix, Kinde, Prisma/PostgreSQL and UploadThing stack. No schema changes needed.
 
 ## Brand commitments
-The owner approved an original identity with warm off-white light surfaces, layered charcoal dark surfaces and restrained teal accents. Common is a working name, not a registered brand claim.
+The owner approved the Common identity with warm off-white light surfaces, layered charcoal dark surfaces and restrained teal accents.
 
 ## Principles
 Make browsing, posting and conversation easy on mobile and desktop. Surface existing features instead of duplicating logic. Use real data, accessible controls and readable content.

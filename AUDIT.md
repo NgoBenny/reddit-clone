@@ -1,6 +1,6 @@
-# Reddit clone audit and revival
+# Common audit and revival
 
-Audited September 30, 2026. Repository: [NgoBenny/reddit-clone](https://github.com/NgoBenny/reddit-clone), starting commit `dd0f2fc`. This is the Next.js/Prisma project; the account also has a separate `redditclone` repository.
+Audited September 30, 2026. Repository: [NgoBenny/common](https://github.com/NgoBenny/common) (formerly `reddit-clone`), starting commit `dd0f2fc`. This is the Next.js/Prisma project; the account also has a separate `redditclone` repository.
 
 ## Is it recoverable?
 

@@ -68,7 +68,7 @@ components:
 
 **Creative North Star: "Conversations first"**
 
-A calm, approachable community app where conversations lead. Common is a working name. Preserve existing features and URLs while giving the application its own identity. Linear, Notion and Airbnb analyses in VoltAgent/awesome-design-md informed hierarchy, typography and discovery; no proprietary fonts or brand assets are copied.
+A calm, approachable community app where conversations lead. Preserve existing features and URLs while giving the application its own identity. Linear, Notion and Airbnb analyses in VoltAgent/awesome-design-md informed hierarchy, typography and discovery; no proprietary fonts or brand assets are copied.
 
 **Key Characteristics:**
 

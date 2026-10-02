@@ -170,7 +170,7 @@ async function main() {
   function findHandler(node) {
     if (
       ts.isFunctionDeclaration(node) &&
-      node.name?.text === "createPostReddit"
+      node.name?.text === "submitPost"
     )
       handler = node.getText(source);
     ts.forEachChild(node, findHandler);

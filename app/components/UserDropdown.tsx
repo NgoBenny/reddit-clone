@@ -8,7 +8,7 @@ import {
 import { MenuIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 interface iAppProps {
   userImage: string | null;
@@ -59,6 +59,11 @@ export function UserDropdown({ userImage, userName }: iAppProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <LoginLink authUrlParams={{ prompt: "login" }}>
+            Switch account
+          </LoginLink>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <LogoutLink className="w-full">Logout</LogoutLink>
         </DropdownMenuItem>

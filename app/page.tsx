@@ -49,7 +49,7 @@ export default async function Home({
               Sign in and join communities to build your personal feed.
             </p>
             <Link
-              href="/api/auth/login"
+              href="/api/auth/login?prompt=login"
               className="inline-flex min-h-11 items-center text-primary underline"
             >
               Sign in to see your joined communities
