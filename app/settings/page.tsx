@@ -28,8 +28,8 @@ export default async function SettingsPage() {
   const data = await getData(user.id);
 
   return (
-    <div className="max-w-[1000px] mx-auto flex flex-col mt-4">
+    <main className="page-single">
       <SettingsForm username={data?.userName} />
-    </div>
+    </main>
   );
 }

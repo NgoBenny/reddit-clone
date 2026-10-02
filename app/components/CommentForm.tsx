@@ -23,13 +23,13 @@ export function CommentForm({ postId, parentId }: iAppProps) {
       <input type="hidden" name="postId" value={postId}></input>
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
       <Label htmlFor={`comment-input-${parentId || postId}`}>
-        {parentId ? "Your reply" : "Comment here"}
+        {parentId ? "Your reply" : "Join the conversation"}
       </Label>
       <Textarea
         id={`comment-input-${parentId || postId}`}
         required
         maxLength={5000}
-        placeholder="Add a comment"
+        placeholder={parentId ? "Write a thoughtful reply…" : "Share your perspective…"}
         className="w-full mt-1 mb-2"
         name="comment"
         value={comment}

@@ -7,6 +7,7 @@ import Pagination from "../components/Pagination";
 import { ActionForm } from "../components/ActionForm";
 import { SubmitButton } from "../components/SubmitButtons";
 import { markNotificationsRead } from "../actions";
+import { Bell } from "lucide-react";
 export default async function Notifications({
   searchParams,
 }: {
@@ -25,6 +26,7 @@ export default async function Notifications({
       select: {
         id: true,
         kind: true,
+        createdAt: true,
         readAt: true,
         postId: true,
         commentId: true,
@@ -33,16 +35,35 @@ export default async function Notifications({
     }),
   ]);
   return (
-    <main className="max-w-[800px] mx-auto px-4 py-6 space-y-4">
+    <main className="page-single space-y-4">
       <h1 className="text-2xl font-semibold">Notifications</h1>
-      <ActionForm action={markNotificationsRead}>
-        <SubmitButton text="Mark all as read" />
-      </ActionForm>
-      {!notices.length && <p>No notifications yet.</p>}
+      {count > 0 && (
+        <ActionForm
+          action={markNotificationsRead}
+          success="All notifications marked as read"
+        >
+          <SubmitButton text="Mark all as read" />
+        </ActionForm>
+      )}
+      {!notices.length && (
+        <div className="rounded-2xl border bg-card p-10 text-center">
+          <Bell className="mx-auto h-8 w-8 text-primary" />
+          <h2 className="mt-4 text-xl font-semibold">You’re all caught up</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Replies to your comments and conversations will appear here.
+          </p>
+          <Link
+            href="/"
+            className="mt-4 inline-flex min-h-11 items-center text-primary underline"
+          >
+            Explore conversations
+          </Link>
+        </div>
+      )}
       {notices.map((n) => (
         <article
           key={n.id}
-          className={`border rounded p-4 ${!n.readAt ? "border-primary" : ""}`}
+          className={`border rounded-2xl bg-card p-5 ${!n.readAt ? "border-primary" : ""}`}
         >
           <Link href={`/post/${n.postId}#comment-${n.commentId}`}>
             {!n.readAt && <strong>Unread · </strong>}
@@ -54,6 +75,12 @@ export default async function Notifications({
                 ? "Content unavailable"
                 : n.Post.title}
             </span>
+            <time
+              dateTime={n.createdAt.toISOString()}
+              className="mt-2 block text-xs text-muted-foreground"
+            >
+              {n.createdAt.toLocaleDateString("en-US", { timeZone: "UTC" })}
+            </time>
           </Link>
         </article>
       ))}

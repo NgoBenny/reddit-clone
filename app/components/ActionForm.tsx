@@ -1,5 +1,5 @@
 "use client";
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -12,7 +12,7 @@ export function ActionForm({
 }: {
   action: (
     form: FormData,
-  ) => Promise<void | { error?: string; message?: string }>;
+  ) => Promise<void | { error?: string; message?: string; status?: string }>;
   children: ReactNode;
   confirm?: string;
   success?: string;
@@ -22,6 +22,7 @@ export function ActionForm({
   const ref = useRef<HTMLFormElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const confirmed = useRef(false);
+  const [error, setError] = useState("");
   return (
     <form
       ref={ref}
@@ -33,22 +34,31 @@ export function ActionForm({
         }
       }}
       action={async (form) => {
+        setError("");
         try {
           const result = await action(form);
-          if (result?.error) {
+          const problem =
+            result?.error ||
+            (result?.status === "error" ? result.message : undefined);
+          if (problem) {
+            setError(problem);
             toast({
               title: "Couldn’t save changes",
-              description: result.error,
+              description: problem,
               variant: "destructive",
             });
             return;
           }
           const details = ref.current?.closest("details");
-          if (details) details.open = false;
+          if (details && !details.classList.contains("thread"))
+            details.open = false;
           if (result?.message || success)
             toast({ title: result?.message || success });
         } catch (error) {
           unstable_rethrow(error);
+          setError(
+            "Check your input and access, then try again. Your draft is kept.",
+          );
           toast({
             title: "Couldn’t save changes",
             description:
@@ -61,6 +71,14 @@ export function ActionForm({
       }}
     >
       {children}
+      {error && (
+        <p
+          role="alert"
+          className="mt-2 max-w-sm rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive dark:text-red-300"
+        >
+          {error}
+        </p>
+      )}
       {confirm && (
         <dialog
           ref={dialog}

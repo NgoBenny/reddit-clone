@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MenuIcon } from "lucide-react";
 import Link from "next/link";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import Image from "next/image";
+import { LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 interface iAppProps {
   userImage: string | null;
@@ -18,15 +19,18 @@ export function UserDropdown({ userImage, userName }: iAppProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="Account menu">
-        <div className="rounded-full border px-2 py-2 lg:px-4 lg:py-2 flex items-center gap-x-3">
+        <div className="rounded-xl px-2 py-2 flex min-h-11 items-center gap-x-3 hover:bg-muted">
           <MenuIcon className="w-6 h-6 lg:w-5 lg:h-5" />
-          <img
+          <Image
+            width={32}
+            height={32}
+            unoptimized
             src={
               userImage ??
-              "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg"
+              "/avatar.svg"
             }
             alt="Your user avatar"
-            className="rounded-full h-9 w-9 hidden lg:block"
+            className="rounded-full h-8 w-8 hidden sm:block"
             referrerPolicy="no-referrer"
           />
         </div>
@@ -55,6 +59,11 @@ export function UserDropdown({ userImage, userName }: iAppProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <LoginLink authUrlParams={{ prompt: "login" }}>
+            Switch account
+          </LoginLink>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <LogoutLink className="w-full">Logout</LogoutLink>
         </DropdownMenuItem>

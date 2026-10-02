@@ -14,6 +14,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { Bookmark } from "lucide-react";
 export const dynamic = "force-dynamic";
 export default async function PostPage({
   params,
@@ -36,6 +37,7 @@ export default async function PostPage({
       removedAt: true,
       editedAt: true,
       flair: true,
+      createdAt: true,
       User: { select: { userName: true } },
       Subreddit: { select: { name: true, description: true, rules: true } },
       Vote: { select: { voteType: true, userId: true } },
@@ -58,17 +60,23 @@ export default async function PostPage({
   if (!post) notFound();
   const available = !post.deletedAt && !post.removedAt;
   return (
-    <main className="max-w-[1200px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
-      <div className="w-full md:w-[70%] min-w-0">
-        <Card className="p-3 flex">
+    <main className="page-grid">
+      <div className="min-w-0">
+        <Link
+          href={`/r/${post.subName}`}
+          className="mb-3 inline-flex min-h-11 items-center text-sm text-primary"
+        >
+          Back to {post.subName}
+        </Link>
+        <Card className="p-4 shadow-none sm:p-6">
           {available && (
             <VoteControls
               postId={id}
               {...getVoteSummary(post.Vote, user?.id)}
-              className="flex flex-col items-center gap-y-2 p-2"
+              className="mb-4 inline-flex items-center rounded-xl bg-muted text-sm font-semibold tabular-nums"
             />
           )}
-          <div className="p-2 min-w-0 flex-1 break-words">
+          <div className="min-w-0 break-words">
             <p className="text-xs text-muted-foreground">
               {available ? (
                 <Link href={`/u/${post.User?.userName}`}>
@@ -78,7 +86,18 @@ export default async function PostPage({
                 "Content unavailable"
               )}
             </p>
-            <h1 className="font-medium mt-1 text-lg">
+            <time
+              dateTime={post.createdAt.toISOString()}
+              className="text-xs text-muted-foreground"
+            >
+              {post.createdAt.toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+                timeZone: "UTC",
+              })}
+            </time>
+            <h1 className="my-3 text-2xl font-semibold leading-snug sm:text-3xl">
               {post.deletedAt
                 ? "[deleted]"
                 : post.removedAt
@@ -103,7 +122,7 @@ export default async function PostPage({
                     alt="Post image"
                     width={500}
                     height={400}
-                    className="w-full h-auto object-contain mt-2"
+                    className="mt-4 max-h-[600px] w-full rounded-xl bg-muted object-contain"
                   />
                 )}
                 {post.textContent && <RenderToJson data={post.textContent} />}
@@ -124,8 +143,15 @@ export default async function PostPage({
                       value={String(!post.savedBy.length)}
                     />
                     <SubmitButton
-                      text={post.savedBy.length ? "Unsave" : "Save"}
+                      text={post.savedBy.length ? "Saved" : "Save"}
                       size="sm"
+                      variant="ghost"
+                      pressed={!!post.savedBy.length}
+                      icon={
+                        <Bookmark
+                          className={`h-4 w-4 ${post.savedBy.length ? "fill-current text-primary" : ""}`}
+                        />
+                      }
                     />
                   </ActionForm>
                 </div>
@@ -147,8 +173,8 @@ export default async function PostPage({
           </div>
         </Card>
       </div>
-      <aside className="w-full md:w-[30%]">
-        <Card className="p-4 space-y-4">
+      <aside>
+        <Card className="p-5 space-y-4 shadow-none xl:sticky xl:top-24">
           <h2 className="font-semibold">About Community</h2>
           <Link href={`/r/${post.subName}`} className="text-primary">
             r/{post.subName}

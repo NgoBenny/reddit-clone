@@ -12,6 +12,8 @@ export type FeedQuery = {
 export const postSelect = {
   id: true,
   title: true,
+  createdAt: true,
+  bodyText: true,
   textContent: true,
   imageString: true,
   subName: true,

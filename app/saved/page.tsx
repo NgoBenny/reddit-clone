@@ -11,9 +11,12 @@ export default async function Saved({
   if (!user) redirect("/api/auth/login");
   const query = await searchParams;
   return (
-    <main className="max-w-[800px] mx-auto px-4 py-6 space-y-4">
+    <main className="page-single space-y-4">
       <h1 className="text-2xl font-semibold">Saved posts</h1>
-      <FeedFilters query={query} />
+      <p className="text-sm text-muted-foreground">
+        Your private collection of conversations to come back to.
+      </p>
+      <FeedFilters key={JSON.stringify(query)} query={query} />
       <PostFeed query={query} savedBy={user.id} userId={user.id} />
     </main>
   );

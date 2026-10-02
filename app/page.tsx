@@ -1,13 +1,12 @@
 import { Card } from "@/components/ui/card";
-import Image from "next/image";
-import Banner from "../public/banner.png";
-import HelloImage from "../public/hero-image.png";
 import Link from "next/link";
+import { ArrowUpRight, Users } from "lucide-react";
 import { CreatePostCard } from "./components/CreatePostCard";
 import { FeedFilters, PostFeed } from "./components/PostFeed";
 import type { FeedQuery } from "./lib/feed";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 export const dynamic = "force-dynamic";
+
 export default async function Home({
   searchParams,
 }: {
@@ -16,37 +15,71 @@ export default async function Home({
   const query = await searchParams;
   const user = await getKindeServerSession().getUser();
   return (
-    <main className="max-w-[1000px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4 mb-10">
-      <div className="w-full md:w-[65%] min-w-0 flex flex-col gap-y-5">
-        <CreatePostCard />
-        <FeedFilters query={query} home />
+    <main className="page-grid">
+      <div className="min-w-0 space-y-5">
+        <div>
+          <h1 className="text-2xl font-semibold">
+            {query.feed === "home" ? (
+              "Your conversations"
+            ) : (
+              <>
+                <span className="sm:hidden">Explore conversations</span>
+                <span className="hidden sm:inline">
+                  Discover a different perspective
+                </span>
+              </>
+            )}
+          </h1>
+          <p className="mt-1 hidden text-sm text-muted-foreground sm:block">
+            {query.feed === "home"
+              ? "The latest from the communities you’ve joined."
+              : "Questions, ideas and stories from across Common."}
+          </p>
+        </div>
+        <FeedFilters key={JSON.stringify(query)} query={query} home />
+        <div className="hidden sm:block">
+          <CreatePostCard />
+        </div>
         {query.feed === "home" && !user ? (
-          <Link href="/api/auth/login" className="text-primary underline">
-            Sign in to see your joined communities
-          </Link>
+          <Card className="p-6 shadow-none">
+            <h2 className="text-xl font-semibold">
+              A feed that feels like yours
+            </h2>
+            <p className="my-3 text-sm text-muted-foreground">
+              Sign in and join communities to build your personal feed.
+            </p>
+            <Link
+              href="/api/auth/login?prompt=login"
+              className="inline-flex min-h-11 items-center text-primary underline"
+            >
+              Sign in to see your joined communities
+            </Link>
+          </Card>
         ) : (
           <PostFeed query={query} userId={user?.id} />
         )}
       </div>
-      <aside className="w-full md:w-[35%]">
-        <Card>
-          <Image src={Banner} alt="Community banner" />
-          <div className="p-4">
-            <div className="flex items-center">
-              <Image src={HelloImage} alt="" className="w-10 h-16 -mt-6" />
-              <h1 className="font-medium pl-3 text-xl">Home</h1>
-            </div>
-            <p className="text-muted-foreground my-4 text-sm">
-              Join communities to build your own feed, or discover discussions
-              from everyone.
-            </p>
-            <Link
-              href="/r/create"
-              className="block rounded bg-primary p-2 text-center text-primary-foreground"
-            >
-              Create Community
-            </Link>
-          </div>
+      <aside className="hidden xl:block">
+        <Card className="sticky top-24 space-y-4 p-5 shadow-none">
+          <Users className="h-7 w-7 text-primary" />
+          <h2 className="text-xl font-semibold">Find your people.</h2>
+          <p className="text-sm text-muted-foreground">
+            Good conversations start with shared interests. Find a community,
+            join in, or make room for something new.
+          </p>
+          <Link
+            href="/communities"
+            className="flex min-h-11 items-center justify-between text-sm font-medium text-primary"
+          >
+            Browse communities
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/r/create"
+            className="flex min-h-11 items-center justify-center rounded-xl border text-sm font-medium hover:bg-muted"
+          >
+            Create community
+          </Link>
         </Card>
       </aside>
     </main>

@@ -1,45 +1,18 @@
 "use client";
-
-import { Card, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import Image from "next/image";
-import pfp from "../../public/pfp.png";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Text, Video } from "lucide-react";
+import { ImagePlus, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TipTabEditor } from "@/app/components/TipTabEditor";
-import { SubmitButton } from "@/app/components/SubmitButtons";
-import { UploadDropzone } from "@/app/components/Uploadthing";
+import { TipTabEditor } from "./TipTabEditor";
+import { SubmitButton } from "./SubmitButtons";
+import { UploadDropzone } from "./Uploadthing";
 import { useState } from "react";
 import { createPost, editPost } from "@/app/actions";
 import { unstable_rethrow } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
-import { JSONContent } from "@tiptap/react";
-
-const rules = [
-  {
-    id: 1,
-    text: "Remember the human",
-  },
-  {
-    id: 2,
-    text: "Respect others",
-  },
-  {
-    id: 3,
-    text: "Look for the original source of content",
-  },
-  {
-    id: 4,
-    text: "Don't duplicate content",
-  },
-  {
-    id: 5,
-    text: "Read the community's rules",
-  },
-];
+import type { JSONContent } from "@tiptap/react";
 
 export default function PostComposer({
   subName,
@@ -59,167 +32,211 @@ export default function PostComposer({
   };
 }) {
   const { toast } = useToast();
-  const [imageUrl, setImageUrl] = useState<null | string>(
+  const [imageUrl, setImageUrl] = useState<string | null>(
     post?.imageString ?? null,
   );
-  const [json, setJson] = useState<null | JSONContent>(
+  const [json, setJson] = useState<JSONContent | null>(
     post?.textContent ?? null,
   );
-  const [title, setTitle] = useState<null | string>(post?.title ?? null);
+  const [title, setTitle] = useState(post?.title ?? "");
   const [flair, setFlair] = useState(post?.flair ?? "");
+  const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  async function createPostReddit(formData: FormData) {
+  async function submitPost(formData: FormData) {
+    setError("");
     try {
       const result = await (post
         ? editPost({ jsonContent: json }, formData)
         : createPost({ jsonContent: json }, formData));
-      if (result?.error)
+      if (result?.error) {
+        setError(result.error);
         toast({
-          title: "Couldn’t create post",
+          title: post ? "Couldn’t save post" : "Couldn’t create post",
           description: result.error,
           variant: "destructive",
         });
+      }
     } catch (error) {
       unstable_rethrow(error);
+      const message =
+        "Check your title, content and community, then try again. Your draft is kept.";
+      setError(message);
       toast({
-        title: "Couldn’t create post",
-        description:
-          "Check your title, content, and community, then try again.",
+        title: post ? "Couldn’t save post" : "Couldn’t create post",
+        description: message,
         variant: "destructive",
       });
     }
   }
   return (
-    <div className="max-w-[1000px] mx-auto flex flex-col md:flex-row gap-6 px-4 mt-4">
-      <div className="w-full md:w-[65%] min-w-0 flex flex-col gap-y-5">
-        <h1 className="font-semibold">
-          Subreddit:{" "}
-          <Link href={`/r/${subName}`} className="text-primary">
-            r/{subName}
+    <main className="page-grid">
+      <div className="min-w-0 space-y-5">
+        <div>
+          <Link
+            href={`/r/${subName}`}
+            className="inline-flex min-h-11 items-center text-sm text-primary"
+          >
+            Back to {subName}
           </Link>
-        </h1>
-        <Tabs defaultValue="post" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="post">
-              <Text className="h-4 w-4 mr-2" />
-              Post
-            </TabsTrigger>
-            <TabsTrigger value="image">
-              <Video className="h-4 w-4 mr-2" />
-              Image
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="post">
-            <Card>
-              <form action={createPostReddit}>
-                <input
-                  type="hidden"
-                  name="imageUrl"
-                  value={imageUrl ?? undefined}
-                />
-                <input type="hidden" name="subName" value={subName} />
-                {post && <input type="hidden" name="postId" value={post.id} />}
-                <CardHeader>
-                  <Label htmlFor="post-title">Title</Label>
-                  <Input
-                    id="post-title"
-                    maxLength={300}
-                    required
-                    name="title"
-                    placeholder="Title"
-                    value={title ?? ""}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-
-                  <TipTabEditor setJson={setJson} json={json} />
-                  <Label htmlFor="post-flair">Flair</Label>
-                  <select
-                    id="post-flair"
-                    name="flair"
-                    value={flair}
-                    onChange={(event) => setFlair(event.target.value)}
-                    className="border rounded bg-background p-2"
-                  >
-                    <option value="">No flair</option>
-                    {[
-                      ...new Set([
-                        ...flairs,
-                        ...(post?.flair ? [post.flair] : []),
-                      ]),
-                    ].map((flair) => (
-                      <option key={flair}>{flair}</option>
-                    ))}
-                  </select>
-                </CardHeader>
-                <CardFooter>
-                  <SubmitButton text={post ? "Save post" : "Create Post"} />
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
-          <TabsContent value="image">
-            <Card>
-              <CardHeader>
-                {post && imageUrl === null ? (
-                  <p>This post has no image.</p>
-                ) : imageUrl === null ? (
-                  <UploadDropzone
-                    className="ut-button:bg-primary ut-button:ut-readying:bg-primary/50 ut-label:text-primary ut-button:ut-uploading:bg-primary/50 
-                  ut-button:ut-uploading:after:bg-primary"
-                    endpoint="imageUploader"
-                    skipPolling
-                    onClientUploadComplete={(res) => {
-                      setImageUrl(res[0].url);
-                    }}
-                    onUploadError={(error: Error) => {
-                      toast({
-                        title: "Upload failed",
-                        description: error.message,
-                        variant: "destructive",
-                      });
-                    }}
-                  />
-                ) : (
-                  <Image
-                    src={imageUrl}
-                    alt="uploaded image"
-                    width={500}
-                    height={400}
-                    className="h-80 rounded-lg w-full object-contain"
-                  />
-                )}
-                <p className="text-sm text-muted-foreground">
-                  Add your title and publish from the Post tab.
-                </p>
-              </CardHeader>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-      <div className="w-full md:w-[35%]">
-        <Card className="flex flex-col p-4">
-          <div className="flex items-center gap-x-2">
-            <Image className="h-10 w-10" src={pfp} alt="pfp" />
-            <h1 className="font-medium">Reddit Posting Rules</h1>
-          </div>
-          <Separator className="mt-2" />
-          <h2 className="font-medium mt-4">r/{subName} rules</h2>
-          <p className="text-sm whitespace-pre-wrap">
-            {communityRules || "Be respectful."}
+          <h1 className="text-3xl font-semibold">
+            {post ? "Edit your post" : "Start a conversation"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            A question, an idea, a story. Give people something to talk about.
           </p>
-
-          <div className="flex flex-col gap-y-5 mt-5">
-            {rules.map((item) => (
-              <div key={item.id}>
-                <p className="text-sm font-medium">
-                  {item.id}. {item.text}
-                </p>
-                <Separator className="mt-2" />
-              </div>
-            ))}
+        </div>
+        <Card className="p-5 shadow-none sm:p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b pb-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Posting in</p>
+              <Link
+                href={`/r/${subName}`}
+                className="font-semibold text-primary"
+              >
+                {subName}
+              </Link>
+            </div>
+            {!post && (
+              <Link
+                href="/communities?compose=1"
+                className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline"
+              >
+                Choose another community
+              </Link>
+            )}
           </div>
+          <form action={submitPost} className="space-y-5">
+            <input type="hidden" name="imageUrl" value={imageUrl ?? ""} />
+            <input type="hidden" name="subName" value={subName} />
+            {post && <input type="hidden" name="postId" value={post.id} />}
+            <div>
+              <Label htmlFor="post-title">Title</Label>
+              <Input
+                id="post-title"
+                maxLength={300}
+                required
+                name="title"
+                placeholder="What would you like to discuss?"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="mt-2 h-11"
+              />
+              <p className="mt-1 text-right text-xs tabular-nums text-muted-foreground">
+                {title.length}/300
+              </p>
+            </div>
+            <div>
+              <Label>Post body</Label>
+              <TipTabEditor setJson={setJson} json={json} />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Add text or an image. Your draft stays here if submission fails.
+              </p>
+            </div>
+            <details
+              open={imageUrl !== null || undefined}
+              className="rounded-xl border p-3"
+            >
+              <summary className="flex min-h-11 items-center gap-2 text-sm font-medium">
+                <ImagePlus className="h-4 w-4 text-primary" />
+                {imageUrl
+                  ? "Image attached"
+                  : post
+                    ? "Image attachment"
+                    : "Add an image (optional)"}
+              </summary>
+              {imageUrl ? (
+                <Image
+                  src={imageUrl}
+                  alt="Your attached image preview"
+                  width={700}
+                  height={420}
+                  className="mt-3 max-h-80 w-full rounded-xl object-contain"
+                />
+              ) : post ? (
+                <p className="py-3 text-sm text-muted-foreground">
+                  This post has no image. Its attachment is kept when editing.
+                </p>
+              ) : (
+                <UploadDropzone
+                  className="ut-button:bg-primary ut-label:text-primary ut-button:ut-uploading:bg-primary/50 ut-button:ut-uploading:after:bg-primary"
+                  endpoint="imageUploader"
+                  skipPolling
+                  onUploadBegin={() => setUploading(true)}
+                  onClientUploadComplete={(res) => {
+                    setUploading(false);
+                    if (res[0]) setImageUrl(res[0].url);
+                  }}
+                  onUploadError={(error) => {
+                    setUploading(false);
+                    setError(error.message);
+                    toast({
+                      title: "Upload failed",
+                      description: error.message,
+                      variant: "destructive",
+                    });
+                  }}
+                />
+              )}
+              <p className="mt-3 text-xs text-muted-foreground">
+                One JPEG, PNG, WebP or GIF image, up to 16 MB. It will appear
+                with your title and text.
+              </p>
+            </details>
+            <div>
+              <Label htmlFor="post-flair">Flair (optional)</Label>
+              <select
+                id="post-flair"
+                name="flair"
+                value={flair}
+                onChange={(e) => setFlair(e.target.value)}
+                className="mt-2 block w-full rounded-xl border bg-background px-3 text-sm"
+              >
+                <option value="">No flair</option>
+                {[
+                  ...new Set([...flairs, ...(post?.flair ? [post.flair] : [])]),
+                ].map((label) => (
+                  <option key={label}>{label}</option>
+                ))}
+              </select>
+            </div>
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive dark:text-red-300"
+              >
+                {error}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t pt-4">
+              <Link
+                href={`/r/${subName}`}
+                className="inline-flex min-h-11 items-center px-3 text-sm text-muted-foreground"
+              >
+                Cancel
+              </Link>
+              <SubmitButton
+                text={post ? "Save post" : "Create Post"}
+                disabled={uploading}
+              />
+            </div>
+          </form>
         </Card>
       </div>
-    </div>
+      <aside>
+        <Card className="space-y-4 p-5 shadow-none xl:sticky xl:top-24">
+          <ShieldCheck className="h-6 w-6 text-primary" />
+          <h2 className="font-semibold">{subName} rules</h2>
+          <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+            {communityRules ||
+              "Be respectful. Remember there’s a person behind every reply."}
+          </p>
+          <p className="border-t pt-4 text-sm text-muted-foreground">
+            Use a clear title, share the original source when relevant, and
+            check for an existing conversation before posting.
+          </p>
+        </Card>
+      </aside>
+    </main>
   );
 }

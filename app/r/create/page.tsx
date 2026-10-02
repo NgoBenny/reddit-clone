@@ -7,10 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { useFormState } from "react-dom";
+import { ActionForm } from "@/app/components/ActionForm";
 import { useState } from "react";
-
-import { useActionToast } from "@/app/components/useActionToast";
 
 const initialState = {
   message: "",
@@ -18,12 +16,13 @@ const initialState = {
 };
 
 export default function SubredditPage() {
-  const [state, formAction] = useFormState(createCommunity, initialState);
   const [name, setName] = useState("");
-  useActionToast(state);
   return (
-    <div className="max-w-[1000px] mx-auto flex flex-col mt-4">
-      <form action={formAction}>
+    <main className="page-single">
+      <ActionForm
+        action={createCommunity.bind(null, initialState)}
+        className="rounded-2xl border bg-card p-5 sm:p-8"
+      >
         <h1 className="text-3xl font-extrabold tracking-tight">
           Create Community
         </h1>
@@ -51,7 +50,6 @@ export default function SubredditPage() {
             maxLength={21}
           />
         </div>
-        <p className="mt-1 text-destructive">{state.message}</p>
 
         <div className="w-full flex mt-3.5 gap-x-5 justify-end">
           <Button variant="secondary" asChild>
@@ -59,7 +57,7 @@ export default function SubredditPage() {
           </Button>
           <SubmitButton text="Create Community" />
         </div>
-      </form>
-    </div>
+      </ActionForm>
+    </main>
   );
 }

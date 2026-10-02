@@ -58,7 +58,7 @@ export default async function Profile({
         })
       : [];
   return (
-    <main className="max-w-[800px] mx-auto px-4 py-6 space-y-4">
+    <main className="page-single space-y-4">
       <h1 className="text-2xl font-semibold">u/{user.userName}</h1>
       <p className="text-sm text-muted-foreground">
         Joined {user.createdAt.toLocaleDateString("en-US")} ·{" "}
@@ -98,7 +98,7 @@ export default async function Profile({
         </>
       ) : (
         <>
-          <FeedFilters query={query} />
+          <FeedFilters key={JSON.stringify(query)} query={query} />
           <PostFeed query={query} authorId={user.id} userId={viewer?.id} />
         </>
       )}
