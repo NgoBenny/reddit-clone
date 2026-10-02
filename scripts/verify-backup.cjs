@@ -28,6 +28,8 @@ async function main() {
     run("pg_ctl", ["-D", cluster, "-l", join(cluster, "server.log"), "-o", `-h 127.0.0.1 -p ${port}`, "-w", "start"]);
     started = true;
     const connection = ["-h", "127.0.0.1", "-p", port, "-U", "restore_check", "-d", "postgres"];
+    // RLS policies reference the runtime role; archives deliberately omit role credentials.
+    run("psql", [...connection, "-v", "ON_ERROR_STOP=1", "-c", "CREATE ROLE common_app NOLOGIN"]);
     // initdb creates public; the archive restores its own schema into this empty local database.
     run("psql", [...connection, "-v", "ON_ERROR_STOP=1", "-c", "DROP SCHEMA public"]);
     run("pg_restore", [...connection, "--no-owner", "--no-acl", "--exit-on-error", "--single-transaction", file]);
