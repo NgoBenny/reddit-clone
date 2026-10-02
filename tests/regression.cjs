@@ -19,6 +19,7 @@ async function main() {
   );
   assert.equal(headers["X-Content-Type-Options"], "nosniff");
   assert.equal(headers["X-Frame-Options"], "DENY");
+  assert.equal(config.experimental.serverActions.bodySizeLimit, "1mb");
   assert.match(headers["Content-Security-Policy"], /frame-ancestors 'none'/);
   assert.equal(config.poweredByHeader, false);
   const React = require("react");
@@ -168,10 +169,7 @@ async function main() {
   );
   let handler;
   function findHandler(node) {
-    if (
-      ts.isFunctionDeclaration(node) &&
-      node.name?.text === "submitPost"
-    )
+    if (ts.isFunctionDeclaration(node) && node.name?.text === "submitPost")
       handler = node.getText(source);
     ts.forEachChild(node, findHandler);
   }
@@ -262,6 +260,13 @@ async function main() {
     ],
   };
   assert.equal(validation.validRichText(doc), true);
+  const sanitized = validation.postBody(doc);
+  assert.equal(
+    JSON.stringify(sanitized.textContent).includes("onclick"),
+    false,
+  );
+  assert.equal(sanitized.bodyText, "<script>bad</script>");
+  assert.equal(sanitized.textContent.content[0].attrs.level, 2);
   assert.equal(
     validation.validRichText({ type: "doc", content: "invalid" }),
     false,

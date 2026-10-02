@@ -13,6 +13,7 @@
     "postinstall": "prisma generate",
     "test": "node tests/regression.cjs && node tests/database-safety.cjs",
     "test:features": "node tests/features-integration.cjs",
+    "test:runtime-role": "node tests/runtime-role.cjs",
     "test:browser": "node tests/browser-smoke.cjs",
     "db:check": "node scripts/check-db.cjs",
     "db:backup": "node scripts/backup-db.cjs",

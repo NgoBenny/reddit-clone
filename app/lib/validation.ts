@@ -89,8 +89,28 @@ export function postBody(json: unknown) {
     throw new ValidationError("Invalid or oversized post body");
   const text = (node: any): string =>
     node.type === "text" ? node.text : (node.content ?? []).map(text).join(" ");
+  // Store only editor fields we use; arbitrary attributes never enter persistence.
+  const clean = (
+    node: any,
+  ): import("@prisma/client").Prisma.InputJsonObject => ({
+    type: node.type,
+    ...(node.type === "text" ? { text: node.text } : {}),
+    ...(node.content ? { content: node.content.map(clean) } : {}),
+    ...(node.marks
+      ? { marks: node.marks.map((mark: any) => ({ type: mark.type })) }
+      : {}),
+    ...(node.type === "heading"
+      ? {
+          attrs: {
+            level: [1, 2, 3, 4, 5, 6].includes(node.attrs?.level)
+              ? node.attrs.level
+              : 2,
+          },
+        }
+      : {}),
+  });
   return {
-    textContent: json as import("@prisma/client").Prisma.InputJsonValue,
+    textContent: clean(json),
     bodyText: text(json),
   };
 }

@@ -22,7 +22,15 @@ import {
 
 async function requireUser() {
   const user = await getKindeServerSession().getUser();
-  if (!user) redirect("/api/auth/login");
+  if (!user) {
+    console.warn(
+      JSON.stringify({
+        event: "security.auth_required",
+        source: "server_action",
+      }),
+    );
+    redirect("/api/auth/login");
+  }
   return user;
 }
 

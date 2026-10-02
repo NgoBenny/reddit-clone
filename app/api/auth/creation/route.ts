@@ -16,10 +16,10 @@ export async function GET(req: NextRequest) {
     update: {},
     create: {
       id: user.id,
-      email: user.email ?? "",
-      firstName: user.given_name ?? "",
-      lastName: user.family_name ?? "",
-      imageUrl: user.picture,
+      // Identity/contact details remain with Kinde; the app does not use copies.
+      email: "",
+      firstName: "",
+      lastName: "",
       userName: `user-${crypto.randomUUID().slice(0, 15)}`,
     },
   });
