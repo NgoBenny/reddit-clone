@@ -2,24 +2,24 @@
 name: Common
 description: Community conversations with an original, approachable identity.
 colors:
-  primary: "hsl(174 65% 25%)"
-  primary-dark: "hsl(168 46% 67%)"
+  primary: "hsl(242 41% 46.3%)"
+  primary-dark: "hsl(249 70% 80%)"
   primary-foreground: "hsl(0 0% 100%)"
-  primary-foreground-dark: "hsl(180 25% 10%)"
+  primary-foreground-dark: "hsl(240 25% 13%)"
   background: "hsl(45 25% 97%)"
-  background-dark: "hsl(180 8% 9%)"
+  background-dark: "hsl(240 18% 10%)"
   card: "hsl(0 0% 100%)"
-  card-dark: "hsl(180 7% 13%)"
-  foreground: "hsl(180 12% 13%)"
+  card-dark: "hsl(240 16% 14%)"
+  foreground: "hsl(240 15% 15%)"
   foreground-dark: "hsl(45 20% 94%)"
-  muted-foreground: "hsl(180 5% 39%)"
-  muted-foreground-dark: "hsl(180 5% 69%)"
+  muted-foreground: "hsl(240 6% 40%)"
+  muted-foreground-dark: "hsl(240 10% 72%)"
   border: "hsl(45 10% 86%)"
-  border-dark: "hsl(180 7% 24%)"
-  muted: "hsl(45 15% 93%)"
-  muted-dark: "hsl(180 7% 19%)"
+  border-dark: "hsl(240 13% 27%)"
+  muted: "hsl(250 40% 94%)"
+  muted-dark: "hsl(240 14% 20%)"
   input: "hsl(45 10% 80%)"
-  input-dark: "hsl(180 7% 32%)"
+  input-dark: "hsl(240 13% 35%)"
   destructive: "hsl(0 70% 43%)"
   destructive-dark: "hsl(0 65% 42%)"
   error-dark: "#fca5a5"
@@ -73,13 +73,13 @@ A calm, approachable community app where conversations lead. Preserve existing f
 **Key Characteristics:**
 
 - Warm neutrals
-- Restrained teal
+- Indigo and soft lavender
 - Layered dark surfaces
 - Mobile conversation focus
 
 ## Colors
 
-CSS variables in app/globals.css are the runtime source of truth. Warm off-white canvas, white cards and deep teal accents in light mode; charcoal canvas, visibly lighter cards and pale teal accents in dark mode. Muted text remains readable. Do not rely on color alone for saved, joined, voted or unread states.
+CSS variables in app/globals.css are the runtime source of truth. Warm off-white canvas, white cards and indigo accents in light mode; charcoal canvas, visibly lighter cards and pale lavender accents in dark mode. Muted text remains readable. Do not rely on color alone for saved, joined, voted or unread states.
 
 Destructive actions retain the red destructive fill with white text in both themes. Inline errors use the destructive text color in light mode and pale red in dark mode, with a subtle destructive surface and border; the dark error text treatment does not change button fills.
 

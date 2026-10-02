@@ -28,7 +28,7 @@
     {
       "name": "Navigation item",
       "kind": "nav",
-      "description": "Active navigation uses a restrained teal surface and visible current state.",
+      "description": "Active navigation uses a soft lavender surface and visible current state.",
       "html": "<a class=\"ds-nav\" aria-current=\"page\" href=\"#\">Your feed</a>",
       "css": ".ds-nav {display:flex;align-items:center;min-height:44px;padding:0 12px;border-radius:12px;font:500 14px/20px Inter,sans-serif;color:hsl(var(--muted-foreground));text-decoration:none;} .ds-nav:hover {background:hsl(var(--muted));color:hsl(var(--foreground));} .ds-nav[aria-current=page] {color:hsl(var(--primary));background:hsl(var(--primary) / .1);} .ds-nav:focus-visible {outline:2px solid hsl(var(--ring));outline-offset:3px;}"
     },
@@ -66,7 +66,7 @@
     {
       "name": "Flair label",
       "kind": "chip",
-      "description": "A noninteractive content label using a faint teal surface.",
+      "description": "A noninteractive content label using a soft lavender surface.",
       "html": "<span class=\"ds-flair\">Discussion</span>",
       "css": ".ds-flair {display:inline-block;padding:4px 8px;border-radius:14px;background:hsl(var(--primary) / .1);color:hsl(var(--primary));font:500 12px/16px Inter,sans-serif;}"
     }
@@ -76,7 +76,7 @@
     "overview": "A calm, approachable community app where conversations lead. Common is a working name. Preserve existing features and URLs while giving the application its own identity. Linear, Notion and Airbnb analyses in VoltAgent/awesome-design-md informed hierarchy, typography and discovery; no proprietary fonts or brand assets are copied.",
     "keyCharacteristics": [
       "Warm neutrals",
-      "Restrained teal",
+      "Indigo and soft lavender",
       "Layered dark surfaces",
       "Mobile conversation focus"
     ],
