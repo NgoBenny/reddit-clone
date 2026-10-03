@@ -39,81 +39,83 @@ export async function Navbar() {
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b bg-card">
-        <div className="mx-auto flex min-h-16 max-w-[1440px] flex-wrap items-center gap-3 px-4 py-2 lg:px-6">
-          <Link href="/" aria-label="Common home" className="lg:w-48">
+        <div className="mx-auto flex min-h-16 max-w-[1440px] flex-wrap items-center gap-3 px-4 py-2 lg:px-6 xl:grid xl:grid-cols-[224px_minmax(0,1fr)] xl:gap-0 xl:px-0">
+          <Link href="/" aria-label="Common home" className="lg:w-48 xl:ml-6">
             <Brand />
           </Link>
-          <form
-            action="/"
-            role="search"
-            className="order-last flex h-11 w-full items-center gap-2 rounded-xl bg-muted px-3 sm:order-none sm:ml-4 sm:max-w-md sm:flex-1"
-          >
-            <Search
-              className="h-4 w-4 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <label htmlFor="global-search" className="sr-only">
-              Search conversations
-            </label>
-            <input
-              id="global-search"
-              name="q"
-              type="search"
-              maxLength={100}
-              placeholder="Search conversations"
-              className="min-w-0 flex-1 bg-transparent text-sm"
-            />
-            <button
-              type="submit"
-              aria-label="Search conversations"
-              className="min-h-11 px-2 text-xs font-medium text-primary"
+          <div className="contents xl:page-grid xl:w-full xl:py-0">
+            <form
+              action="/"
+              role="search"
+              className="order-last flex h-11 w-full items-center gap-2 rounded-xl bg-muted px-3 sm:order-none sm:ml-4 sm:max-w-md sm:flex-1 xl:ml-0 xl:justify-self-center"
             >
-              Search
-            </button>
-          </form>
-          <div className="ml-auto flex items-center gap-2">
-            <Button asChild className="hidden sm:inline-flex">
-              <Link href="/communities?compose=1">
-                <Plus className="mr-2 h-4 w-4" />
-                Create post
-              </Link>
-            </Button>
-            <ThemeToggle />
-            {user ? (
-              <>
-                <Link
-                  href="/notifications"
-                  aria-label={`Notifications, ${unread} unread`}
-                  className="relative flex h-11 w-11 items-center justify-center rounded-xl hover:bg-muted"
-                >
-                  <Bell className="h-5 w-5" />
-                  {unread > 0 && (
-                    <span className="absolute right-0 top-0 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
-                      {unread > 99 ? "99+" : unread}
-                    </span>
-                  )}
+              <Search
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <label htmlFor="global-search" className="sr-only">
+                Search conversations
+              </label>
+              <input
+                id="global-search"
+                name="q"
+                type="search"
+                maxLength={100}
+                placeholder="Search conversations"
+                className="min-w-0 flex-1 bg-transparent text-sm"
+              />
+              <button
+                type="submit"
+                aria-label="Search conversations"
+                className="min-h-11 px-2 text-xs font-medium text-primary"
+              >
+                Search
+              </button>
+            </form>
+            <div className="ml-auto flex items-center gap-2 xl:ml-0 xl:justify-self-end">
+              <Button asChild className="hidden sm:inline-flex">
+                <Link href="/communities?compose=1">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create post
                 </Link>
-                <UserDropdown
-                  userImage={user.picture}
-                  userName={profile?.userName}
-                />
-              </>
-            ) : (
-              <>
-                <Button
-                  asChild
-                  variant="ghost"
-                  className="hidden md:inline-flex"
-                >
-                  <RegisterLink>Sign up</RegisterLink>
-                </Button>
-                <Button asChild>
-                  <LoginLink authUrlParams={{ prompt: "login" }}>
-                    Login
-                  </LoginLink>
-                </Button>
-              </>
-            )}
+              </Button>
+              <ThemeToggle />
+              {user ? (
+                <>
+                  <Link
+                    href="/notifications"
+                    aria-label={`Notifications, ${unread} unread`}
+                    className="relative flex h-11 w-11 items-center justify-center rounded-xl hover:bg-muted"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unread > 0 && (
+                      <span className="absolute right-0 top-0 rounded-full bg-primary px-1.5 text-[10px] text-primary-foreground">
+                        {unread > 99 ? "99+" : unread}
+                      </span>
+                    )}
+                  </Link>
+                  <UserDropdown
+                    userImage={user.picture}
+                    userName={profile?.userName}
+                  />
+                </>
+              ) : (
+                <>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    className="hidden md:inline-flex"
+                  >
+                    <RegisterLink>Sign up</RegisterLink>
+                  </Button>
+                  <Button asChild>
+                    <LoginLink authUrlParams={{ prompt: "login" }}>
+                      Login
+                    </LoginLink>
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>

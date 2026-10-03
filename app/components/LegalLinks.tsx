@@ -4,7 +4,7 @@ export function LegalLinks() {
   return (
     <nav
       aria-label="Policies and contact"
-      className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
+      className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-center text-xs text-muted-foreground"
     >
       <Link
         className="inline-flex min-h-11 items-center underline"
