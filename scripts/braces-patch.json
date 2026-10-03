@@ -1,0 +1,59 @@
+{
+  "advisory": "GHSA-vfj7-8cjw-p6xm",
+  "expires": "2026-10-17T00:00:00Z",
+  "files": {
+    "lib/parse.js": {
+      "original": "e572166565f15fa6ad9865ae49d678218e32aabfd1b3720f6d0d43d39800d310",
+      "patched": "273922ed36f7be53e37a23d6a44da3ebeca6bba739f58b77a0886449a64ae2a7",
+      "replacements": [
+        [
+          "    if (value === CHAR_LEFT_PARENTHESES) {",
+          "    if (value === CHAR_LEFT_PARENTHESES) {\n      if (stack.length >= 128) throw new SyntaxError('Brace pattern exceeds safe nesting depth');"
+        ],
+        [
+          "    if (value === CHAR_LEFT_CURLY_BRACE) {",
+          "    if (value === CHAR_LEFT_CURLY_BRACE) {\n      if (stack.length >= 128) throw new SyntaxError('Brace pattern exceeds safe nesting depth');"
+        ]
+      ]
+    },
+    "lib/compile.js": {
+      "original": "dc98f22eee3d511785d92a00758d5f0d48efed5f5813bdecc2de430c529b5c9f",
+      "patched": "112446154596360401da72ebc00155a990c281d7aaee86cdfc6f6f5af4285cd0",
+      "replacements": [
+        [
+          "  const walk = (node, parent = {}) => {\n",
+          "  const walk = (node, parent = {}, depth = 0) => {\n    if (depth > 128) throw new SyntaxError('Brace AST exceeds safe nesting depth');\n"
+        ],
+        [
+          "output += walk(child, node);",
+          "output += walk(child, node, depth + 1);"
+        ]
+      ]
+    },
+    "lib/expand.js": {
+      "original": "41ccc196ebfa7b7781a634e721eb744e4e7bcb54cba427a7e3d6806a1b9e58f7",
+      "patched": "4faec1fdaf8bcf5c73c8e7efb8ff297e4173477d7bd7dd0aa4235e4ccb47c6f6",
+      "replacements": [
+        [
+          "  const walk = (node, parent = {}) => {\n",
+          "  const walk = (node, parent = {}, depth = 0) => {\n    if (depth > 128) throw new SyntaxError('Brace AST exceeds safe nesting depth');\n"
+        ],
+        ["walk(child, node);", "walk(child, node, depth + 1);"]
+      ]
+    },
+    "lib/stringify.js": {
+      "original": "379f22d77bfa1478341ccd49c5e4267464aabcbba03558bab332aac23fc6f23a",
+      "patched": "a21b05a4ceb5c3689dc7a51416b86470df5917157c7153dcf99f8d7b574c74e6",
+      "replacements": [
+        [
+          "  const stringify = (node, parent = {}) => {\n",
+          "  const stringify = (node, parent = {}, depth = 0) => {\n    if (depth > 128) throw new SyntaxError('Brace AST exceeds safe nesting depth');\n"
+        ],
+        [
+          "output += stringify(child);",
+          "output += stringify(child, {}, depth + 1);"
+        ]
+      ]
+    }
+  }
+}
